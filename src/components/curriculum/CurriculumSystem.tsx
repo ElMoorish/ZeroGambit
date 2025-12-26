@@ -44,9 +44,13 @@ export interface CurriculumModule {
     unlocked: boolean;
     completed: boolean;
     progress: number; // 0-100
+    // NEW: Rating range and themes for filtering puzzles
+    ratingMin: number;
+    ratingMax: number;
+    themes: string[]; // Lichess puzzle themes
 }
 
-// The Three Phases
+// The Three Phases with rating-based progression
 export const CURRICULUM_PHASES: CurriculumPhase[] = [
     {
         id: "stone",
@@ -58,11 +62,11 @@ export const CURRICULUM_PHASES: CurriculumPhase[] = [
         borderColor: "border-amber-500/30",
         description: "Master the patterns that create combinations. Every grandmaster was first a tactician.",
         modules: [
-            { id: "stone-1", title: "Pin & Skewer", description: "Geometric attacks", puzzleCount: 20, requiredAccuracy: 70, unlocked: true, completed: false, progress: 0 },
-            { id: "stone-2", title: "Fork Mastery", description: "Double attacks", puzzleCount: 25, requiredAccuracy: 75, unlocked: false, completed: false, progress: 0 },
-            { id: "stone-3", title: "Discovery & Double Check", description: "Hidden threats", puzzleCount: 25, requiredAccuracy: 75, unlocked: false, completed: false, progress: 0 },
-            { id: "stone-4", title: "Back Rank Tactics", description: "Mate patterns", puzzleCount: 30, requiredAccuracy: 80, unlocked: false, completed: false, progress: 0 },
-            { id: "stone-5", title: "Deflection & Decoy", description: "Advanced combinations", puzzleCount: 30, requiredAccuracy: 80, unlocked: false, completed: false, progress: 0 },
+            { id: "stone-1", title: "Pin & Skewer", description: "Geometric attacks", puzzleCount: 20, requiredAccuracy: 70, unlocked: true, completed: false, progress: 0, ratingMin: 400, ratingMax: 800, themes: ["pin", "skewer"] },
+            { id: "stone-2", title: "Fork Mastery", description: "Double attacks", puzzleCount: 25, requiredAccuracy: 75, unlocked: false, completed: false, progress: 0, ratingMin: 600, ratingMax: 1000, themes: ["fork", "doubleAttack"] },
+            { id: "stone-3", title: "Discovery & Double Check", description: "Hidden threats", puzzleCount: 25, requiredAccuracy: 75, unlocked: false, completed: false, progress: 0, ratingMin: 800, ratingMax: 1200, themes: ["discoveredAttack", "doubleCheck"] },
+            { id: "stone-4", title: "Back Rank Tactics", description: "Mate patterns", puzzleCount: 30, requiredAccuracy: 80, unlocked: false, completed: false, progress: 0, ratingMin: 1000, ratingMax: 1400, themes: ["backRankMate", "mateIn1", "mateIn2"] },
+            { id: "stone-5", title: "Deflection & Decoy", description: "Advanced combinations", puzzleCount: 30, requiredAccuracy: 80, unlocked: false, completed: false, progress: 0, ratingMin: 1200, ratingMax: 1600, themes: ["deflection", "attraction", "interference"] },
         ],
     },
     {
@@ -75,11 +79,11 @@ export const CURRICULUM_PHASES: CurriculumPhase[] = [
         borderColor: "border-emerald-500/30",
         description: "Understand the rhythm of the game. Develop plans that flow from opening to middlegame.",
         modules: [
-            { id: "flow-1", title: "Opening Principles", description: "Development & center", puzzleCount: 15, requiredAccuracy: 70, unlocked: false, completed: false, progress: 0 },
-            { id: "flow-2", title: "Pawn Structure", description: "The skeleton of position", puzzleCount: 20, requiredAccuracy: 75, unlocked: false, completed: false, progress: 0 },
-            { id: "flow-3", title: "Piece Activity", description: "Optimal placement", puzzleCount: 20, requiredAccuracy: 75, unlocked: false, completed: false, progress: 0 },
-            { id: "flow-4", title: "King Safety", description: "Castling & attacks", puzzleCount: 25, requiredAccuracy: 80, unlocked: false, completed: false, progress: 0 },
-            { id: "flow-5", title: "Prophylaxis", description: "Preventing opponent's plans", puzzleCount: 25, requiredAccuracy: 85, unlocked: false, completed: false, progress: 0 },
+            { id: "flow-1", title: "Opening Principles", description: "Development & center", puzzleCount: 15, requiredAccuracy: 70, unlocked: false, completed: false, progress: 0, ratingMin: 600, ratingMax: 1000, themes: ["opening", "hangingPiece"] },
+            { id: "flow-2", title: "Pawn Structure", description: "The skeleton of position", puzzleCount: 20, requiredAccuracy: 75, unlocked: false, completed: false, progress: 0, ratingMin: 1000, ratingMax: 1400, themes: ["advancedPawn", "quietMove"] },
+            { id: "flow-3", title: "Piece Activity", description: "Optimal placement", puzzleCount: 20, requiredAccuracy: 75, unlocked: false, completed: false, progress: 0, ratingMin: 1200, ratingMax: 1600, themes: ["trappedPiece", "sacrifice"] },
+            { id: "flow-4", title: "King Safety", description: "Castling & attacks", puzzleCount: 25, requiredAccuracy: 80, unlocked: false, completed: false, progress: 0, ratingMin: 1400, ratingMax: 1800, themes: ["kingsideAttack", "attackingF2F7"] },
+            { id: "flow-5", title: "Prophylaxis", description: "Preventing opponent's plans", puzzleCount: 25, requiredAccuracy: 85, unlocked: false, completed: false, progress: 0, ratingMin: 1600, ratingMax: 2000, themes: ["defensiveMove", "zugzwang"] },
         ],
     },
     {
@@ -92,11 +96,11 @@ export const CURRICULUM_PHASES: CurriculumPhase[] = [
         borderColor: "border-purple-500/30",
         description: "The final wisdom. Convert advantages and save half-points with endgame mastery.",
         modules: [
-            { id: "sage-1", title: "King & Pawn", description: "Opposition & triangulation", puzzleCount: 20, requiredAccuracy: 75, unlocked: false, completed: false, progress: 0 },
-            { id: "sage-2", title: "Rook Endgames", description: "The Lucena & Philidor", puzzleCount: 25, requiredAccuracy: 80, unlocked: false, completed: false, progress: 0 },
-            { id: "sage-3", title: "Minor Piece Endings", description: "Bishop vs Knight", puzzleCount: 20, requiredAccuracy: 80, unlocked: false, completed: false, progress: 0 },
-            { id: "sage-4", title: "Queen Endings", description: "Perpetual checks & wins", puzzleCount: 20, requiredAccuracy: 85, unlocked: false, completed: false, progress: 0 },
-            { id: "sage-5", title: "Theoretical Draws", description: "Fortress & stalemate", puzzleCount: 25, requiredAccuracy: 90, unlocked: false, completed: false, progress: 0 },
+            { id: "sage-1", title: "King & Pawn", description: "Opposition & triangulation", puzzleCount: 20, requiredAccuracy: 75, unlocked: false, completed: false, progress: 0, ratingMin: 800, ratingMax: 1200, themes: ["pawnEndgame", "endgame"] },
+            { id: "sage-2", title: "Rook Endgames", description: "The Lucena & Philidor", puzzleCount: 25, requiredAccuracy: 80, unlocked: false, completed: false, progress: 0, ratingMin: 1200, ratingMax: 1600, themes: ["rookEndgame", "endgame"] },
+            { id: "sage-3", title: "Minor Piece Endings", description: "Bishop vs Knight", puzzleCount: 20, requiredAccuracy: 80, unlocked: false, completed: false, progress: 0, ratingMin: 1400, ratingMax: 1800, themes: ["bishopEndgame", "knightEndgame", "endgame"] },
+            { id: "sage-4", title: "Queen Endings", description: "Perpetual checks & wins", puzzleCount: 20, requiredAccuracy: 85, unlocked: false, completed: false, progress: 0, ratingMin: 1600, ratingMax: 2000, themes: ["queenEndgame", "endgame"] },
+            { id: "sage-5", title: "Theoretical Draws", description: "Fortress & stalemate", puzzleCount: 25, requiredAccuracy: 90, unlocked: false, completed: false, progress: 0, ratingMin: 1800, ratingMax: 2200, themes: ["endgame", "master"] },
         ],
     },
 ];
@@ -239,49 +243,75 @@ function PhaseDetailModal({
                             const isCompleted = moduleProgress >= 100;
                             const isUnlocked = index === 0 || (progress[phase.modules[index - 1].id] || 0) >= module.requiredAccuracy;
 
+                            // Build the puzzle URL with filters
+                            const puzzleUrl = `/puzzles?module=${module.id}&minRating=${module.ratingMin}&maxRating=${module.ratingMax}&themes=${module.themes.join(',')}`;
+
+                            const ModuleWrapper = isUnlocked ? 'a' : 'div';
+
                             return (
                                 <motion.div
                                     key={module.id}
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: index * 0.05 }}
-                                    className={`p-4 rounded-xl border transition-all ${isCompleted
+                                >
+                                    <ModuleWrapper
+                                        {...(isUnlocked ? { href: puzzleUrl } : {})}
+                                        className={`block p-4 rounded-xl border transition-all ${isCompleted
                                             ? "border-green-500/30 bg-green-500/10"
                                             : isUnlocked
-                                                ? "border-border bg-card hover:bg-white/5"
-                                                : "border-border/50 bg-slate-900/50 opacity-60"
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            {isCompleted ? (
-                                                <Check className="w-5 h-5 text-green-500" />
-                                            ) : isUnlocked ? (
-                                                <BookOpen className="w-5 h-5 text-primary" />
-                                            ) : (
-                                                <Lock className="w-5 h-5 text-slate-500" />
-                                            )}
-                                            <div>
-                                                <p className="font-medium">{module.title}</p>
-                                                <p className="text-xs text-muted-foreground">{module.description}</p>
+                                                ? "border-border bg-card hover:bg-white/5 hover:border-primary/50 cursor-pointer"
+                                                : "border-border/50 bg-slate-900/50 opacity-60 cursor-not-allowed"
+                                            }`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                {isCompleted ? (
+                                                    <Check className="w-5 h-5 text-green-500" />
+                                                ) : isUnlocked ? (
+                                                    <BookOpen className="w-5 h-5 text-primary" />
+                                                ) : (
+                                                    <Lock className="w-5 h-5 text-slate-500" />
+                                                )}
+                                                <div>
+                                                    <p className="font-medium">{module.title}</p>
+                                                    <p className="text-xs text-muted-foreground">{module.description}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-mono">{module.ratingMin}-{module.ratingMax}</p>
+                                                <p className="text-xs text-muted-foreground">{module.puzzleCount} puzzles</p>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-sm font-mono">{module.puzzleCount} puzzles</p>
-                                            <p className="text-xs text-muted-foreground">{module.requiredAccuracy}% to unlock next</p>
-                                        </div>
-                                    </div>
 
-                                    {/* Progress Bar */}
-                                    {isUnlocked && (
-                                        <div className="mt-3 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                            <motion.div
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${moduleProgress}%` }}
-                                                className="h-full bg-primary rounded-full"
-                                            />
+                                        {/* Themes */}
+                                        <div className="mt-2 flex flex-wrap gap-1">
+                                            {module.themes.slice(0, 3).map(theme => (
+                                                <span key={theme} className="text-xs px-2 py-0.5 bg-white/5 rounded-full text-muted-foreground">
+                                                    {theme}
+                                                </span>
+                                            ))}
                                         </div>
-                                    )}
+
+                                        {/* Progress Bar */}
+                                        {isUnlocked && (
+                                            <div className="mt-3 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${moduleProgress}%` }}
+                                                    className="h-full bg-primary rounded-full"
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Start button for unlocked modules */}
+                                        {isUnlocked && !isCompleted && (
+                                            <div className="mt-3 flex items-center justify-end text-primary text-sm font-medium">
+                                                Start Training
+                                                <ChevronRight className="w-4 h-4 ml-1" />
+                                            </div>
+                                        )}
+                                    </ModuleWrapper>
                                 </motion.div>
                             );
                         })}
@@ -296,14 +326,9 @@ function PhaseDetailModal({
                     >
                         Close
                     </button>
-                    <a
-                        href="/puzzles"
-                        className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90"
-                    >
-                        <Trophy className="w-4 h-4" />
-                        Start Training
-                        <ChevronRight className="w-4 h-4" />
-                    </a>
+                    <div className="text-sm text-muted-foreground">
+                        Complete modules in order • Rating progresses as you advance
+                    </div>
                 </div>
             </motion.div>
         </>

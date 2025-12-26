@@ -242,6 +242,58 @@ class PuzzleService:
         
         return [Puzzle(**p) for p in selected]
     
+    async def get_curriculum_puzzles(
+        self, 
+        min_rating: int = 400, 
+        max_rating: int = 2000,
+        themes: List[str] = [],
+        count: int = 50
+    ) -> List[Puzzle]:
+        """Get puzzles filtered by rating range and themes for curriculum training"""
+        from api.database import get_db
+        
+        db = get_db()
+        if db is not None:
+            try:
+                # Build query with rating range
+                query = {
+                    "rating": {"$gte": min_rating, "$lte": max_rating}
+                }
+                
+                # Add theme filter if specified
+                if themes:
+                    query["themes"] = {"$in": themes}
+                
+                # Fetch from MongoDB
+                cursor = db.puzzles.find(query).limit(count)
+                puzzles = []
+                async for doc in cursor:
+                    puzzles.append(Puzzle(
+                        id=doc.get("id", str(doc.get("_id"))),
+                        fen=doc["fen"],
+                        moves=doc["moves"],
+                        rating=doc["rating"],
+                        themes=doc.get("themes", []),
+                        phase=doc.get("phase", "middlegame")
+                    ))
+                
+                if puzzles:
+                    return puzzles
+            except Exception as e:
+                print(f"Error fetching curriculum puzzles: {e}")
+        
+        # Fallback to built-in puzzles filtered by rating
+        all_puzzles = []
+        for phase_puzzles in BUILT_IN_PUZZLES.values():
+            for p in phase_puzzles:
+                if min_rating <= p.get("rating", 1000) <= max_rating:
+                    # Check themes if specified
+                    if not themes or any(t in p.get("themes", []) for t in themes):
+                        all_puzzles.append(p)
+        
+        selected = random.sample(all_puzzles, min(count, len(all_puzzles)))
+        return [Puzzle(**p) for p in selected]
+    
     def get_random_puzzle(self, phase: Optional[str] = None) -> Puzzle:
         """Get a random puzzle, optionally filtered by phase"""
         if phase and phase in BUILT_IN_PUZZLES:

@@ -73,6 +73,30 @@ async def get_puzzles_by_phase(phase: str, count: int = 10):
     )
 
 
+@router.get("/curriculum", response_model=PuzzleListResponse)
+async def get_curriculum_puzzles(
+    minRating: int = 400,
+    maxRating: int = 2000,
+    themes: Optional[str] = None,
+    count: int = 50
+):
+    """Get puzzles filtered by rating range and themes for curriculum training"""
+    theme_list = themes.split(',') if themes else []
+    
+    puzzles = await puzzle_service.get_curriculum_puzzles(
+        min_rating=minRating,
+        max_rating=maxRating,
+        themes=theme_list,
+        count=count
+    )
+    
+    return PuzzleListResponse(
+        puzzles=[PuzzleResponse(**p.model_dump()) for p in puzzles],
+        phase="curriculum",
+        total=len(puzzles)
+    )
+
+
 @router.get("/{puzzle_id}", response_model=Optional[PuzzleResponse])
 async def get_puzzle_by_id(puzzle_id: str):
     """Get a specific puzzle by ID"""

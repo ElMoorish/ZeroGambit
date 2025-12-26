@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Puzzle,
@@ -15,7 +16,8 @@ import {
     Loader2,
     Sparkles,
     Volume2,
-    VolumeX
+    VolumeX,
+    GraduationCap
 } from "lucide-react";
 import Link from "next/link";
 import { Chess, Square } from "chess.js";
@@ -33,6 +35,14 @@ interface PuzzleData {
 }
 
 type Phase = "opening" | "middlegame" | "endgame" | "all";
+
+// Curriculum module info for display
+interface CurriculumMode {
+    module: string;
+    minRating: number;
+    maxRating: number;
+    themes: string[];
+}
 
 const PHASE_INFO = {
     all: {
@@ -73,7 +83,31 @@ const PHASE_INFO = {
     },
 };
 
-export default function PuzzlesPage() {
+function PuzzlesPageContent() {
+    const searchParams = useSearchParams();
+
+    // Check if we're in curriculum mode
+    const curriculumModule = searchParams.get("module");
+    const minRating = searchParams.get("minRating");
+    const maxRating = searchParams.get("maxRating");
+    const themesParam = searchParams.get("themes");
+
+    const [curriculumMode, setCurriculumMode] = useState<CurriculumMode | null>(null);
+
+    // Initialize curriculum mode from URL params
+    useEffect(() => {
+        if (curriculumModule && minRating && maxRating) {
+            setCurriculumMode({
+                module: curriculumModule,
+                minRating: parseInt(minRating),
+                maxRating: parseInt(maxRating),
+                themes: themesParam ? themesParam.split(',') : []
+            });
+        } else {
+            setCurriculumMode(null);
+        }
+    }, [curriculumModule, minRating, maxRating, themesParam]);
+
     const [phase, setPhase] = useState<Phase>("middlegame");
     const [puzzles, setPuzzles] = useState<PuzzleData[]>([]);
     const [currentPuzzle, setCurrentPuzzle] = useState<PuzzleData | null>(null);
@@ -262,14 +296,25 @@ export default function PuzzlesPage() {
         ]
     };
 
-    // Fetch puzzles for the selected phase
+    // Fetch puzzles for the selected phase or curriculum module
     useEffect(() => {
         const fetchPuzzles = async () => {
             setIsLoading(true);
             try {
-                // Use the /api/py proxy route (configured in next.config.ts)
-                console.log("Fetching puzzles from:", `/api/py/api/puzzles/phase/${phase}?count=50`);
-                const response = await fetch(`/api/py/api/puzzles/phase/${phase}?count=50`);
+                let url: string;
+
+                if (curriculumMode) {
+                    // Curriculum mode - fetch by rating range and themes
+                    const themesStr = curriculumMode.themes.join(',');
+                    url = `/api/py/api/puzzles/curriculum?minRating=${curriculumMode.minRating}&maxRating=${curriculumMode.maxRating}&themes=${themesStr}&count=50`;
+                    console.log("Fetching curriculum puzzles from:", url);
+                } else {
+                    // Normal phase mode
+                    url = `/api/py/api/puzzles/phase/${phase}?count=50`;
+                    console.log("Fetching puzzles from:", url);
+                }
+
+                const response = await fetch(url);
                 if (response.ok) {
                     const data = await response.json();
                     console.log("Received puzzles from API:", data.puzzles);
@@ -303,7 +348,7 @@ export default function PuzzlesPage() {
         };
 
         fetchPuzzles();
-    }, [phase, loadPuzzle]);
+    }, [phase, curriculumMode, loadPuzzle]);
 
     const handleMove = useCallback((sourceSquare: string, targetSquare: string) => {
         if (!chess || !currentPuzzle || status !== "solving") return false;
@@ -461,8 +506,8 @@ export default function PuzzlesPage() {
                                 }
                             }}
                             className={`p-2 rounded-lg transition-colors ${voiceEnabled
-                                    ? "bg-primary/10 text-primary hover:bg-primary/20"
-                                    : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                                ? "bg-primary/10 text-primary hover:bg-primary/20"
+                                : "bg-secondary text-muted-foreground hover:bg-secondary/80"
                                 }`}
                             title={voiceEnabled ? "Voice On - Click to Mute" : "Voice Off - Click to Enable"}
                         >
@@ -691,5 +736,21 @@ export default function PuzzlesPage() {
                 </div>
             </main>
         </div>
+    );
+}
+
+// Default export with Suspense for useSearchParams
+export default function PuzzlesPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="text-center">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
+                    <p className="text-muted-foreground">Loading puzzles...</p>
+                </div>
+            </div>
+        }>
+            <PuzzlesPageContent />
+        </Suspense>
     );
 }

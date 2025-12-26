@@ -163,3 +163,96 @@ export async function getPuzzleStats() {
 
     return { total, solved, solveRate: total > 0 ? (solved / total) * 100 : 0 };
 }
+
+export interface OpeningStats {
+    eco: string;
+    name: string;
+    totalGames: number;
+    wins: number;
+    losses: number;
+    draws: number;
+    winRate: number;
+}
+
+export async function getOpeningStats(username?: string): Promise<{
+    openings: OpeningStats[];
+    totalGamesWithOpening: number;
+    bestOpening: OpeningStats | null;
+    worstOpening: OpeningStats | null;
+    mostPlayed: OpeningStats | null;
+}> {
+    const allGames = await db.games.toArray();
+
+    // Filter games with ECO codes
+    const gamesWithEco = allGames.filter(g => g.eco && g.eco.length > 0);
+
+    // Group by ECO code
+    const openingMap = new Map<string, {
+        name: string;
+        games: LocalGame[];
+    }>();
+
+    for (const game of gamesWithEco) {
+        const eco = game.eco!;
+        if (!openingMap.has(eco)) {
+            openingMap.set(eco, {
+                name: game.opening || eco,
+                games: []
+            });
+        }
+        openingMap.get(eco)!.games.push(game);
+    }
+
+    // Calculate stats for each opening
+    const openings: OpeningStats[] = [];
+
+    for (const [eco, data] of openingMap) {
+        let wins = 0;
+        let losses = 0;
+        let draws = 0;
+
+        for (const game of data.games) {
+            // Determine if user is white or black
+            const isWhite = username ?
+                game.white.toLowerCase() === username.toLowerCase() :
+                true; // Default assume white for now
+
+            if (game.result === '1-0') {
+                isWhite ? wins++ : losses++;
+            } else if (game.result === '0-1') {
+                isWhite ? losses++ : wins++;
+            } else if (game.result === '1/2-1/2') {
+                draws++;
+            }
+        }
+
+        const totalGames = data.games.length;
+        const winRate = totalGames > 0 ? (wins / totalGames) * 100 : 0;
+
+        openings.push({
+            eco,
+            name: data.name,
+            totalGames,
+            wins,
+            losses,
+            draws,
+            winRate
+        });
+    }
+
+    // Sort by total games (most played first)
+    openings.sort((a, b) => b.totalGames - a.totalGames);
+
+    // Find best/worst/most played
+    const validOpenings = openings.filter(o => o.totalGames >= 3); // Need at least 3 games for meaningful stats
+    const sortedByWinRate = [...validOpenings].sort((a, b) => b.winRate - a.winRate);
+
+    return {
+        openings: openings.slice(0, 10), // Top 10
+        totalGamesWithOpening: gamesWithEco.length,
+        bestOpening: sortedByWinRate[0] || null,
+        worstOpening: sortedByWinRate[sortedByWinRate.length - 1] || null,
+        mostPlayed: openings[0] || null
+    };
+}
+

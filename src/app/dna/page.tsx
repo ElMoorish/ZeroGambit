@@ -13,8 +13,11 @@ import {
     Flame,
     Zap,
     Brain,
+    BookOpen,
+    Trophy,
+    AlertTriangle
 } from "lucide-react";
-import { getChessDNA, getGameStats, type ChessDNA } from "@/lib/db";
+import { getChessDNA, getGameStats, getOpeningStats, type ChessDNA, type OpeningStats } from "@/lib/db";
 
 /**
  * Chess DNA Page - Your Playing Style Visualization
@@ -37,15 +40,23 @@ const DNA_TRAITS = [
 export default function DNAPage() {
     const [dna, setDna] = useState<ChessDNA | null>(null);
     const [stats, setStats] = useState({ total: 0, analyzed: 0, wins: 0, losses: 0, draws: 0 });
+    const [openingData, setOpeningData] = useState<{
+        openings: OpeningStats[];
+        totalGamesWithOpening: number;
+        bestOpening: OpeningStats | null;
+        worstOpening: OpeningStats | null;
+        mostPlayed: OpeningStats | null;
+    } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [hasRealData, setHasRealData] = useState(false);
 
     useEffect(() => {
         async function loadData() {
             try {
-                const [dnaData, statsData] = await Promise.all([
+                const [dnaData, statsData, openingStatsData] = await Promise.all([
                     getChessDNA(),
                     getGameStats(),
+                    getOpeningStats(),
                 ]);
 
                 // Only use DNA data if we have real analyzed games
@@ -57,6 +68,7 @@ export default function DNAPage() {
                     setHasRealData(false);
                 }
                 setStats(statsData);
+                setOpeningData(openingStatsData);
             } catch (error) {
                 console.error("Failed to load DNA:", error);
                 setDna(null);
@@ -222,8 +234,8 @@ export default function DNAPage() {
                         >
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-xl font-bold flex items-center gap-2">
-                                    <Brain className="w-5 h-5 text-primary" />
-                                    Opening Repertoire
+                                    <BookOpen className="w-5 h-5 text-primary" />
+                                    Opening Analyzer
                                 </h3>
                                 <a
                                     href="/openings"
@@ -233,70 +245,132 @@ export default function DNAPage() {
                                 </a>
                             </div>
 
-                            <div className="grid md:grid-cols-2 gap-4 mb-6">
-                                {/* Most Played Openings */}
-                                <div className="bg-slate-800/50 rounded-xl p-4">
-                                    <h4 className="text-sm font-medium text-muted-foreground mb-3">Most Played</h4>
-                                    <div className="space-y-2">
-                                        {(dna.openingRepertoire.length > 0 ? dna.openingRepertoire.slice(0, 4) : ["B90", "D30", "C50", "E62"]).map((eco, i) => (
-                                            <div key={eco} className="flex items-center justify-between">
-                                                <span className="font-mono text-primary">{eco}</span>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
-                                                        <div
-                                                            className="h-full bg-primary rounded-full"
-                                                            style={{ width: `${90 - i * 15}%` }}
-                                                        />
-                                                    </div>
-                                                    <span className="text-xs text-muted-foreground">{90 - i * 15}%</span>
+                            {openingData && openingData.openings.length > 0 ? (
+                                <>
+                                    {/* Stats Summary */}
+                                    <div className="grid grid-cols-3 gap-4 mb-6">
+                                        <div className="bg-slate-800/50 rounded-xl p-4 text-center">
+                                            <div className="text-2xl font-bold text-primary">{openingData.totalGamesWithOpening}</div>
+                                            <div className="text-xs text-muted-foreground">Games with Opening</div>
+                                        </div>
+                                        {openingData.bestOpening && (
+                                            <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center">
+                                                <div className="text-2xl font-bold text-green-400">{openingData.bestOpening.winRate.toFixed(0)}%</div>
+                                                <div className="text-xs text-muted-foreground">Best: {openingData.bestOpening.eco}</div>
+                                            </div>
+                                        )}
+                                        {openingData.worstOpening && (
+                                            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
+                                                <div className="text-2xl font-bold text-red-400">{openingData.worstOpening.winRate.toFixed(0)}%</div>
+                                                <div className="text-xs text-muted-foreground">Weakest: {openingData.worstOpening.eco}</div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="grid md:grid-cols-2 gap-4 mb-6">
+                                        {/* Most Played Openings */}
+                                        <div className="bg-slate-800/50 rounded-xl p-4">
+                                            <h4 className="text-sm font-medium text-muted-foreground mb-3">Most Played</h4>
+                                            <div className="space-y-2">
+                                                {openingData.openings.slice(0, 5).map((opening) => {
+                                                    const maxGames = openingData.openings[0].totalGames;
+                                                    const widthPercent = (opening.totalGames / maxGames) * 100;
+                                                    return (
+                                                        <div key={opening.eco} className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                                <span className="font-mono text-primary text-sm">{opening.eco}</span>
+                                                                <span className="text-xs text-muted-foreground truncate">{opening.name.split(':')[0]}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
+                                                                    <div
+                                                                        className="h-full bg-primary rounded-full"
+                                                                        style={{ width: `${widthPercent}%` }}
+                                                                    />
+                                                                </div>
+                                                                <span className="text-xs text-muted-foreground w-8 text-right">{opening.totalGames}</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        {/* Opening Performance */}
+                                        <div className="bg-slate-800/50 rounded-xl p-4">
+                                            <h4 className="text-sm font-medium text-muted-foreground mb-3">Win Rate by Opening</h4>
+                                            <div className="space-y-2">
+                                                {openingData.openings.slice(0, 5).map((opening) => {
+                                                    const color = opening.winRate >= 55 ? "text-green-400" :
+                                                        opening.winRate >= 45 ? "text-yellow-400" : "text-red-400";
+                                                    return (
+                                                        <div key={opening.eco} className="flex items-center justify-between text-sm">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-mono text-xs">{opening.eco}</span>
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {opening.wins}W / {opening.losses}L / {opening.draws}D
+                                                                </span>
+                                                            </div>
+                                                            <span className={`font-medium ${color}`}>
+                                                                {opening.winRate.toFixed(0)}%
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Weakness Alert */}
+                                    {openingData.worstOpening && openingData.worstOpening.winRate < 50 && (
+                                        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                                            <div className="flex items-start gap-3">
+                                                <div className="p-2 bg-red-500/20 rounded-lg">
+                                                    <AlertTriangle className="w-5 h-5 text-red-400" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-medium text-red-400 mb-1">Improvement Needed</h4>
+                                                    <p className="text-sm text-muted-foreground mb-3">
+                                                        Your win rate with <span className="text-white font-medium">{openingData.worstOpening.name}</span> ({openingData.worstOpening.eco}) is only {openingData.worstOpening.winRate.toFixed(0)}%.
+                                                    </p>
+                                                    <a
+                                                        href={`/openings?eco=${openingData.worstOpening.eco.charAt(0)}`}
+                                                        className="inline-flex items-center gap-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg transition-colors"
+                                                    >
+                                                        <Zap className="w-4 h-4" />
+                                                        Practice {openingData.worstOpening.eco} Openings
+                                                    </a>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
+                                        </div>
+                                    )}
 
-                                {/* Opening Performance */}
-                                <div className="bg-slate-800/50 rounded-xl p-4">
-                                    <h4 className="text-sm font-medium text-muted-foreground mb-3">Win Rate by Opening</h4>
-                                    <div className="space-y-2">
-                                        {[
-                                            { eco: "B90", name: "Sicilian Najdorf", winRate: 62, color: "text-green-400" },
-                                            { eco: "D30", name: "Queen's Gambit", winRate: 55, color: "text-green-400" },
-                                            { eco: "C50", name: "Italian Game", winRate: 48, color: "text-yellow-400" },
-                                            { eco: "E62", name: "King's Indian", winRate: 35, color: "text-red-400" },
-                                        ].map((opening) => (
-                                            <div key={opening.eco} className="flex items-center justify-between text-sm">
-                                                <span className="truncate">{opening.name}</span>
-                                                <span className={`font-medium ${opening.color}`}>
-                                                    {opening.winRate}%
-                                                </span>
+                                    {/* Best Opening Highlight */}
+                                    {openingData.bestOpening && openingData.bestOpening.winRate >= 60 && (
+                                        <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 mt-4">
+                                            <div className="flex items-start gap-3">
+                                                <div className="p-2 bg-green-500/20 rounded-lg">
+                                                    <Trophy className="w-5 h-5 text-green-400" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-medium text-green-400 mb-1">Your Strongest Opening</h4>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        <span className="text-white font-medium">{openingData.bestOpening.name}</span> ({openingData.bestOpening.eco}) with {openingData.bestOpening.winRate.toFixed(0)}% win rate across {openingData.bestOpening.totalGames} games!
+                                                    </p>
+                                                </div>
                                             </div>
-                                        ))}
-                                    </div>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="text-center py-8 text-muted-foreground">
+                                    <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                                    <p>Import games to see your opening statistics</p>
+                                    <a href="/games" className="text-primary hover:underline text-sm mt-2 inline-block">
+                                        Import Games →
+                                    </a>
                                 </div>
-                            </div>
-
-                            {/* Weakness Alert */}
-                            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
-                                <div className="flex items-start gap-3">
-                                    <div className="p-2 bg-red-500/20 rounded-lg">
-                                        <Target className="w-5 h-5 text-red-400" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-medium text-red-400 mb-1">Weakest Opening Detected</h4>
-                                        <p className="text-sm text-muted-foreground mb-3">
-                                            Your win rate with the <span className="text-white font-medium">King's Indian Defense (E62)</span> is below average at 35%.
-                                        </p>
-                                        <a
-                                            href="/openings?eco=E"
-                                            className="inline-flex items-center gap-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg transition-colors"
-                                        >
-                                            <Zap className="w-4 h-4" />
-                                            Practice King's Indian
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                            )}
                         </motion.div>
 
                         {/* Stats Summary */}
