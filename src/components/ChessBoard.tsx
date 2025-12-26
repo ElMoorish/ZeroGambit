@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useContext } from "react";
+import React, { useMemo, useContext } from "react";
 import { Chessboard as ReactChessboard } from "react-chessboard";
 import { PIECE_COMPONENTS } from "./ChessPieces";
 
@@ -34,7 +34,10 @@ interface ChessBoardProps {
     id?: string;
 }
 
-export function ChessBoard({
+// Memoize the component to prevent re-renders when parent state changes but props don't
+export const ChessBoard = React.memo(ChessBoardComponent);
+
+function ChessBoardComponent({
     position,
     onMove,
     orientation = "white",
@@ -46,7 +49,7 @@ export function ChessBoard({
     id = "BasicBoard", // Default ID
 }: ChessBoardProps) {
     // DEBUG: Always log position
-    console.log(`[ChessBoard] id=${id} position=${position?.substring(0, 30)}...`);
+    // console.log(`[ChessBoard] id=${id} position=${position?.substring(0, 30)}...`);
 
     // Attempt to use context, fallback to prop, fallback to 'green'
     // But wait, hooks must be unconditional.

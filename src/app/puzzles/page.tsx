@@ -17,6 +17,7 @@ import {
     Sparkles,
     Volume2,
     VolumeX,
+    Trophy,
     GraduationCap
 } from "lucide-react";
 import Link from "next/link";
@@ -139,6 +140,68 @@ function PuzzlesPageContent() {
             window.speechSynthesis.speak(utterance);
         }
     }, [voiceEnabled]);
+
+    // Gamification State
+    const [moduleProgress, setModuleProgress] = useState(0);
+    const [xpGained, setXpGained] = useState(0);
+    const [showModuleComplete, setShowModuleComplete] = useState(false);
+
+    // Load initial progress
+    useEffect(() => {
+        if (!curriculumMode) return;
+
+        async function loadProgress() {
+            try {
+                const { getSetting } = await import("@/lib/db");
+                const progressJson = await getSetting("curriculum_progress");
+                if (progressJson) {
+                    const progressMap = JSON.parse(progressJson);
+                    const current = progressMap[curriculumMode!.module] || 0;
+                    setModuleProgress(current);
+                }
+            } catch (error) {
+                console.error("Failed to load progress:", error);
+            }
+        }
+        loadProgress();
+    }, [curriculumMode]);
+
+    // Update progress when puzzle is solved
+    const updateProgress = useCallback(async () => {
+        if (!curriculumMode) return;
+
+        try {
+            const { getSetting, setSetting } = await import("@/lib/db");
+
+            // Calculate XP (Base 10 + streak bonus)
+            const xp = 10 + (streak * 2);
+            setXpGained(prev => prev + xp);
+
+            // Update module progress (e.g. +4% per puzzle)
+            const increment = 4; // 25 puzzles to complete module
+            setModuleProgress(prev => {
+                const newProgress = Math.min(prev + increment, 100);
+
+                // Save to DB
+                getSetting("curriculum_progress").then(json => {
+                    const progressMap = json ? JSON.parse(json) : {};
+                    progressMap[curriculumMode.module] = newProgress;
+                    setSetting("curriculum_progress", JSON.stringify(progressMap));
+                });
+
+                // Check completion
+                if (newProgress >= 100 && prev < 100) {
+                    setShowModuleComplete(true);
+                    playBrilliant(); // Play special sound
+                }
+
+                return newProgress;
+            });
+
+        } catch (error) {
+            console.error("Failed to update progress:", error);
+        }
+    }, [curriculumMode, streak, playBrilliant]);
 
     // Fetch coaching insight from LangGraph AI Coach
     const fetchCoaching = useCallback(async (
@@ -389,6 +452,11 @@ function PuzzlesPageContent() {
                     playBrilliant();
                     // Fetch coaching for completion
                     fetchCoaching(chess.fen(), currentPuzzle.moves, userMove, moveIndex, true, playerColor, "correct");
+
+                    // Update curriculum progress
+                    if (curriculumMode) {
+                        updateProgress();
+                    }
                 } else {
                     // Computer's response
                     setMoveIndex(moveIndex + 1);
@@ -433,7 +501,7 @@ function PuzzlesPageContent() {
         } catch {
             return false;
         }
-    }, [chess, currentPuzzle, moveIndex, status, playMove, playCapture, playCheck, playBlunder, playBrilliant]);
+    }, [chess, currentPuzzle, moveIndex, status, playMove, playCapture, playCheck, playBrilliant, playBlunder, curriculumMode, updateProgress, playerColor, fetchCoaching]);
 
     const nextPuzzle = useCallback(() => {
         // Mark current puzzle as seen
@@ -646,6 +714,39 @@ function PuzzlesPageContent() {
 
                     {/* Puzzle Info Panel */}
                     <div className="space-y-4">
+                        {/* Gamification Panel - only in curriculum mode */}
+                        {curriculumMode && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-2xl p-4"
+                            >
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <GraduationCap className="w-5 h-5 text-amber-500" />
+                                        <span className="font-bold text-amber-500">Module Progress</span>
+                                    </div>
+                                    <span className="font-mono font-bold">{Math.round(moduleProgress)}%</span>
+                                </div>
+                                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${moduleProgress}%` }}
+                                        className="h-full bg-amber-500"
+                                    />
+                                </div>
+                                {xpGained > 0 && (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="mt-2 text-center text-sm font-bold text-green-400"
+                                    >
+                                        +{xpGained} XP Gained this session!
+                                    </motion.div>
+                                )}
+                            </motion.div>
+                        )}
+
                         {/* Current Puzzle Info */}
                         <div className={`bg-card rounded-2xl border ${phaseInfo.border} p-4`}>
                             <div className="flex items-center gap-2 mb-3">
@@ -734,6 +835,68 @@ function PuzzlesPageContent() {
                         </div>
                     </div>
                 </div>
+
+                {/* Module Complete Modal */}
+                <AnimatePresence>
+                    {showModuleComplete && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                        >
+                            <motion.div
+                                initial={{ scale: 0.9, y: 20 }}
+                                animate={{ scale: 1, y: 0 }}
+                                exit={{ scale: 0.9, y: 20 }}
+                                className="bg-card border border-border rounded-2xl p-8 max-w-md w-full text-center relative overflow-hidden"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-purple-500/10" />
+
+                                <div className="relative z-10">
+                                    <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        transition={{ delay: 0.2, type: "spring" }}
+                                        className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-6"
+                                    >
+                                        <Trophy className="w-10 h-10 text-amber-500" />
+                                    </motion.div>
+
+                                    <h2 className="text-3xl font-bold mb-2">Module Mastered!</h2>
+                                    <p className="text-muted-foreground mb-6">
+                                        You've completed the required training for this module. Your tactical vision is sharp!
+                                    </p>
+
+                                    <div className="bg-secondary/50 rounded-xl p-4 mb-6">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-sm text-muted-foreground">Total XP Gained</span>
+                                            <span className="font-bold text-green-400">+{xpGained} XP</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-muted-foreground">Puzzles Solved</span>
+                                            <span className="font-bold">{streak}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-3">
+                                        <Link href="/curriculum" className="flex-1">
+                                            <button className="w-full py-3 rounded-xl bg-secondary hover:bg-secondary/80 font-medium transition-colors">
+                                                Back to Map
+                                            </button>
+                                        </Link>
+                                        <button
+                                            onClick={() => setShowModuleComplete(false)}
+                                            className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition-colors"
+                                        >
+                                            Keep Training
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </main>
         </div>
     );

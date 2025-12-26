@@ -146,8 +146,18 @@ function StatBar({ label, value, max, color, icon: Icon }: {
     );
 }
 
+import { useSafeUser } from "@/hooks/useSafeClerk";
+
 export function SkillGardenDashboard() {
     const stats = MOCK_STATS;
+    const { user } = useSafeUser();
+
+    // Check for any active subscription
+    const subscription = user?.publicMetadata?.subscription as string | undefined;
+    const isSubscribed = subscription === 'monthly' ||
+        subscription === 'annual' ||
+        subscription === 'grandmaster' ||
+        subscription === 'candidate_master';
 
     return (
         <div className="container mx-auto px-6 py-12">
@@ -261,21 +271,23 @@ export function SkillGardenDashboard() {
                         <p className="text-sm text-muted-foreground mt-1">Keep it going!</p>
                     </motion.div>
 
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 }}
-                        className="p-6 rounded-2xl bg-gradient-to-br from-primary/10 to-amber-500/10 border border-primary/20"
-                    >
-                        <div className="flex items-center gap-3 mb-3 text-primary">
-                            <Lock className="w-5 h-5" />
-                            <span>Pro Features</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-3">Unlock AI Coach & Deep Analytics</p>
-                        <Link href="/pricing" className="text-sm font-medium text-primary hover:underline">
-                            Upgrade Now &rarr;
-                        </Link>
-                    </motion.div>
+                    {!isSubscribed && (
+                        <motion.div
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className="p-6 rounded-2xl bg-gradient-to-br from-primary/10 to-amber-500/10 border border-primary/20"
+                        >
+                            <div className="flex items-center gap-3 mb-3 text-primary">
+                                <Lock className="w-5 h-5" />
+                                <span>Pro Features</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-3">Unlock AI Coach & Deep Analytics</p>
+                            <Link href="/pricing" className="text-sm font-medium text-primary hover:underline">
+                                Upgrade Now &rarr;
+                            </Link>
+                        </motion.div>
+                    )}
                 </div>
             </div>
         </div>
