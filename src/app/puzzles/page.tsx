@@ -114,8 +114,8 @@ export default function PuzzlesPage() {
     ) => {
         setIsCoachLoading(true);
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-            const response = await fetch(`${apiUrl}/api/coach/puzzle`, {
+            // Use the /api/py proxy route (configured in next.config.ts)
+            const response = await fetch(`/api/py/api/coach/puzzle`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -257,9 +257,9 @@ export default function PuzzlesPage() {
         const fetchPuzzles = async () => {
             setIsLoading(true);
             try {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-                console.log("Fetching puzzles from:", `${apiUrl}/api/puzzles/phase/${phase}?count=50`);
-                const response = await fetch(`${apiUrl}/api/puzzles/phase/${phase}?count=50`);
+                // Use the /api/py proxy route (configured in next.config.ts)
+                console.log("Fetching puzzles from:", `/api/py/api/puzzles/phase/${phase}?count=50`);
+                const response = await fetch(`/api/py/api/puzzles/phase/${phase}?count=50`);
                 if (response.ok) {
                     const data = await response.json();
                     console.log("Received puzzles from API:", data.puzzles);
