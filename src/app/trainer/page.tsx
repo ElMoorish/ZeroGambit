@@ -10,7 +10,8 @@ import {
     Sparkles,
     Brain,
     Target,
-    MessageCircle
+    MessageCircle,
+    BookOpen
 } from "lucide-react";
 import Link from "next/link";
 
@@ -39,6 +40,21 @@ const TRAINER_MODES: TrainerMode[] = [
             "Pattern recognition teaching",
             "Progressive hints",
             "Tactical pattern identification"
+        ]
+    },
+    {
+        id: "opening-trainer",
+        title: "Opening Trainer",
+        description: "Master chess openings with interactive exploration and quiz mode",
+        icon: BookOpen,
+        href: "/openings",
+        color: "text-amber-400",
+        bgGradient: "from-amber-500/20 to-orange-500/20",
+        features: [
+            "120+ ECO openings library",
+            "Interactive main line explorer",
+            "Quiz mode to test your knowledge",
+            "Weakness detection & training"
         ]
     },
     {
@@ -103,7 +119,7 @@ export default function TrainerPage() {
                 </motion.div>
 
                 {/* Mode Cards */}
-                <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
                     {TRAINER_MODES.map((mode, index) => {
                         const Icon = mode.icon;
                         return (
