@@ -25,3 +25,6 @@ langchain-core>=0.3.0
 
 # Video Content Pipeline
 edge-tts>=6.1.0
+
+# User Validation
+email-validator>=2.1.0
