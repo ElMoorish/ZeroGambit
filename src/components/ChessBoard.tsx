@@ -150,7 +150,20 @@ function ChessBoardComponent({
         >
             <ReactChessboardAny
                 id={id}
-                options={chessboardOptions}
+                position={position}
+                boardOrientation={orientation}
+                arePiecesDraggable={interactable}
+                customDarkSquareStyle={{ backgroundColor: currentTheme.dark }}
+                customLightSquareStyle={{ backgroundColor: currentTheme.light }}
+                customSquareStyles={customSquareStyles}
+                customPieces={customPieces}
+                animationDuration={200}
+                onPieceDrop={(sourceSquare: string, targetSquare: string) => {
+                    if (onMove && targetSquare) {
+                        return onMove(sourceSquare, targetSquare);
+                    }
+                    return false;
+                }}
             />
         </div>
     );
