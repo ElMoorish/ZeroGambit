@@ -63,10 +63,11 @@ class DynamoDBPuzzleService:
         min_rating: int, 
         max_rating: int, 
         count: int = 10,
-        source: Optional[str] = None
+        source: Optional[str] = None,
+        themes: Optional[List[str]] = None
     ) -> List[Dict]:
         """
-        Get puzzles within a rating range.
+        Get puzzles within a rating range, optionally filtered by source and themes.
         Uses multiple rating bucket queries for efficiency.
         """
         puzzles = []
@@ -74,56 +75,75 @@ class DynamoDBPuzzleService:
         # Calculate which buckets we need to query
         start_bucket = (min_rating // 100) * 100
         end_bucket = (max_rating // 100) * 100
+        buckets = [f"{b}-{b+99}" for b in range(start_bucket, end_bucket + 1, 100)]
         
-        for bucket_start in range(start_bucket, end_bucket + 1, 100):
-            rating_bucket = f"{bucket_start}-{bucket_start + 99}"
+        if not buckets:
+            return []
+            
+        attempts = 0
+        max_attempts = 10 # Allow more attempts to find specific themes
+        
+        while len(puzzles) < count and attempts < max_attempts:
+            attempts += 1
+            bucket = random.choice(buckets) # Pick random bucket for variety
             
             try:
-                # Query by partition key (rating_bucket)
-                response = self.table.query(
-                    KeyConditionExpression=Key('rating_bucket').eq(rating_bucket),
-                    Limit=count * 2  # Get extra to allow for filtering
-                )
+                # Build Query Args
+                query_args = {
+                    'KeyConditionExpression': Key('rating_bucket').eq(bucket),
+                    'Limit': 50 # Fetch batch
+                }
+                
+                # Build Filter Expression
+                filter_expr = None
+                
+                # Add Theme Filter
+                if themes:
+                    # Construct OR filter: contains(theme1) OR contains(theme2)...
+                    theme_filter = None
+                    for t in themes:
+                        condition = Attr('themes').contains(t)
+                        if theme_filter is None:
+                            theme_filter = condition
+                        else:
+                            theme_filter = theme_filter | condition
+                    filter_expr = theme_filter
+                
+                # Add Source Filter (AND)
+                if source:
+                    source_condition = Attr('source').eq(source)
+                    if filter_expr is None:
+                        filter_expr = source_condition
+                    else:
+                        filter_expr = filter_expr & source_condition
+                
+                if filter_expr is not None:
+                    query_args['FilterExpression'] = filter_expr
+                
+                # Execute Query
+                response = self.table.query(**query_args)
                 
                 items = response.get('Items', [])
                 
-                # Filter by exact rating range and optional source
+                # Client-Side Double Check (DynamoDB FilterExpression is not always 100% strict on types/logic if schema varies)
                 for item in items:
                     item = decimal_to_python(item)
                     rating = item.get('rating', 0)
                     
                     if min_rating <= rating <= max_rating:
-                        if source is None or item.get('source') == source:
-                            puzzles.append(item)
+                         puzzles.append(item)
+                            
+                if len(puzzles) >= count:
+                    break
                             
             except Exception as e:
-                print(f"Error querying bucket {rating_bucket}: {e}")
+                print(f"Error querying bucket {bucket}: {e}")
                 continue
         
         # Shuffle and limit
         random.shuffle(puzzles)
         return puzzles[:count]
     
-    def get_puzzles_by_phase(self, phase: str, count: int = 10) -> List[Dict]:
-        """Get puzzles by game phase (opening, middlegame, endgame)"""
-        # Map phase to typical rating ranges
-        phase_ratings = {
-            "opening": (600, 1200),
-            "middlegame": (1000, 1800),
-            "endgame": (800, 1600)
-        }
-        
-    @lru_cache(maxsize=128)
-    def _get_category_puzzles(self, category_key: str, count: int) -> List[Dict]:
-        """
-        Cached helper for fetching frequently accessed puzzle categories (e.g. daily, specific themes).
-        This method is a placeholder for a more sophisticated caching layer (e.g. Redis).
-        For now, it caches in memory for the lifetime of the process.
-        """
-        # In this simplified version, we just return empty list to trigger the main logic
-        # Ideally, this would do the actual fetching and be cached
-        return []
-
     def get_puzzles_by_phase(self, phase: str, count: int = 10) -> List[Dict]:
         """Get puzzles by game phase (opening, middlegame, endgame) with optimization"""
         
@@ -194,62 +214,13 @@ class DynamoDBPuzzleService:
         max_rating: int = 3000
     ) -> List[Dict]:
         """Get puzzles that include a specific theme using GSI if available, else optimized query"""
-        
-        # NOTE: For optimal performance with 5M+ puzzles, we should use the 'theme-index' GSI
-        # if it exists. The theme-index typically has Partition Key: 'theme' (string) 
-        # but pure dynamo doesn't fully support multi-value sets as GSI PKs easily.
-        #
-        # OPTIMIZATION Strategy:
-        # 1. Try querying a GSI 'theme-rating-index' (Theme PK, Rating SK)
-        # 2. If filtering by rating is strict, use Query on rating buckets with FilterExpression (better than Scan)
-        
-        try:
-            # Plan B: Query by Rating Bucket (Partition Key) + Filter by Theme
-            # This avoids a full table scan. We pick random buckets relevant to the rating range.
-            
-            puzzles = []
-            attempts = 0
-            max_attempts = 5
-            
-            # Identify relevant buckets
-            start_bucket_val = (max(min_rating, 600) // 100) * 100
-            end_bucket_val = (min(max_rating, 2500) // 100) * 100
-            relevant_buckets = [f"{i}-{i+99}" for i in range(start_bucket_val, end_bucket_val + 1, 100)]
-            
-            if not relevant_buckets:
-                relevant_buckets = ["1000-1099", "1200-1299", "1400-1499"]
-
-            while len(puzzles) < count and attempts < max_attempts:
-                attempts += 1
-                # Pick a random bucket to query
-                bucket = random.choice(relevant_buckets)
-                
-                try:
-                    response = self.table.query(
-                        KeyConditionExpression=Key('rating_bucket').eq(bucket),
-                        FilterExpression=Attr('themes').contains(theme),
-                        Limit=50  # Get batch
-                    )
-                    
-                    items = response.get('Items', [])
-                    for item in items:
-                        item = decimal_to_python(item)
-                        r = item.get('rating', 0)
-                        if min_rating <= r <= max_rating:
-                            puzzles.append(item)
-                            
-                    if len(puzzles) >= count:
-                        break
-                        
-                except Exception as query_err:
-                    print(f"Error querying bucket {bucket} for theme {theme}: {query_err}")
-            
-            random.shuffle(puzzles)
-            return puzzles[:count]
-            
-        except Exception as e:
-            print(f"Error getting puzzles by theme {theme}: {e}")
-            return []
+        # OPTIMIZATION: Use the new get_puzzles_by_rating_range support for themes
+        return self.get_puzzles_by_rating_range(
+            min_rating=min_rating,
+            max_rating=max_rating,
+            count=count,
+            themes=[theme]
+        )
     
     def get_curriculum_puzzles(
         self,
@@ -259,26 +230,13 @@ class DynamoDBPuzzleService:
         count: int = 10
     ) -> List[Dict]:
         """Get puzzles for curriculum-based training"""
-        puzzles = self.get_puzzles_by_rating_range(min_rating, max_rating, count * 3)
-        
-        if themes:
-            # Filter to puzzles that have at least one matching theme
-            theme_set = set(t.lower() for t in themes)
-            filtered = []
-            for p in puzzles:
-                puzzle_themes = p.get('themes', '')
-                if isinstance(puzzle_themes, str):
-                    puzzle_themes = puzzle_themes.lower().split(',')
-                else:
-                    puzzle_themes = [t.lower() for t in puzzle_themes]
-                
-                if any(t in theme_set for t in puzzle_themes):
-                    filtered.append(p)
-            
-            puzzles = filtered
-        
-        random.shuffle(puzzles)
-        return puzzles[:count]
+        # Efficiently query with theme filters pushed to DynamoDB
+        return self.get_puzzles_by_rating_range(
+            min_rating=min_rating, 
+            max_rating=max_rating, 
+            count=count,
+            themes=themes
+        )
     
     def get_random_puzzle(self) -> Optional[Dict]:
         """Get a single random puzzle"""
