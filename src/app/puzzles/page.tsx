@@ -13,7 +13,9 @@ import {
     Check,
     X,
     Loader2,
-    Sparkles
+    Sparkles,
+    Volume2,
+    VolumeX
 } from "lucide-react";
 import Link from "next/link";
 import { Chess, Square } from "chess.js";
@@ -87,10 +89,12 @@ export default function PuzzlesPage() {
     const [seenPuzzleIds, setSeenPuzzleIds] = useState<Set<string>>(new Set());
     const [coachMessage, setCoachMessage] = useState<string>("");
     const [isCoachLoading, setIsCoachLoading] = useState(false);
+    const [voiceEnabled, setVoiceEnabled] = useState(true); // Voice toggle for AI coaching
     const { playMove, playCapture, playCheck, playBlunder, playBrilliant } = useSounds();
 
-    // Speak coaching message using browser TTS
+    // Speak coaching message using browser TTS (only if voice enabled)
     const speakCoaching = useCallback((text: string) => {
+        if (!voiceEnabled) return; // Skip TTS if voice disabled
         if ('speechSynthesis' in window && text) {
             // Cancel any ongoing speech
             window.speechSynthesis.cancel();
@@ -100,7 +104,7 @@ export default function PuzzlesPage() {
             utterance.lang = 'en-US';
             window.speechSynthesis.speak(utterance);
         }
-    }, []);
+    }, [voiceEnabled]);
 
     // Fetch coaching insight from LangGraph AI Coach
     const fetchCoaching = useCallback(async (
@@ -180,9 +184,15 @@ export default function PuzzlesPage() {
         const color = turn === "w" ? "white" : "black";
         setPlayerColor(color);
 
-        // Fetch initial coaching hint when puzzle appears
-        fetchCoaching(newChess.fen(), puzzle.moves, "", 1, true, color, "hint");
-    }, [fetchCoaching]);
+        // Cancel any ongoing TTS when switching puzzles
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
+
+        // NOTE: AI Coach is only triggered on:
+        // 1. Hint button click (showHintMove)
+        // 2. Puzzle solved (status === "correct")
+    }, []);
 
     // Fallback puzzles with verified FEN positions (hardcoded for reliability)
     const FALLBACK_PUZZLES: Record<Phase, PuzzleData[]> = {
@@ -361,8 +371,8 @@ export default function PuzzlesPage() {
                 setLastWrongMove({ from: sourceSquare, to: targetSquare });
                 setStreak(0);
 
-                // Fetch coaching for wrong move (helpful hint)
-                fetchCoaching(chess.fen(), currentPuzzle.moves, userMove, moveIndex, false, playerColor, "wrong");
+                // NOTE: We don't fetch coaching on wrong moves to reduce API calls
+                // User can click Hint button if they need help
 
                 // 3. Keep the bad move on board for 500ms so user sees it
                 // Then undo and clear highlight
@@ -402,11 +412,21 @@ export default function PuzzlesPage() {
         }
     }, [currentPuzzle, puzzles, seenPuzzleIds, loadPuzzle]);
 
-    const showHintMove = () => {
-        if (!currentPuzzle) return;
+    const showHintMove = useCallback(() => {
+        if (!currentPuzzle || !chess) return;
         setShowHint(true);
-        // Don't change status - keep board interactive
-    };
+
+        // Fetch AI coaching when hint is requested
+        fetchCoaching(
+            chess.fen(),
+            currentPuzzle.moves,
+            "",
+            moveIndex,
+            true,
+            playerColor,
+            "hint"
+        );
+    }, [currentPuzzle, chess, moveIndex, playerColor, fetchCoaching]);
 
     const phaseInfo = PHASE_INFO[phase];
     const PhaseIcon = phaseInfo.icon;
@@ -429,8 +449,26 @@ export default function PuzzlesPage() {
                         </div>
                     </div>
 
-                    {/* Streak Counter */}
+                    {/* Streak Counter & Voice Toggle */}
                     <div className="flex items-center gap-3">
+                        {/* Voice Toggle */}
+                        <button
+                            onClick={() => {
+                                setVoiceEnabled(!voiceEnabled);
+                                // Cancel any ongoing speech when disabling
+                                if (voiceEnabled && 'speechSynthesis' in window) {
+                                    window.speechSynthesis.cancel();
+                                }
+                            }}
+                            className={`p-2 rounded-lg transition-colors ${voiceEnabled
+                                    ? "bg-primary/10 text-primary hover:bg-primary/20"
+                                    : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                                }`}
+                            title={voiceEnabled ? "Voice On - Click to Mute" : "Voice Off - Click to Enable"}
+                        >
+                            {voiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                        </button>
+
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary">
                             <span className="text-sm font-medium">Streak: {streak}</span>
                         </div>
