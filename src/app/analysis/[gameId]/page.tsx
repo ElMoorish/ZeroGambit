@@ -566,18 +566,13 @@ export default function AnalysisPage({ params }: PageProps) {
                         throw new Error(`Chess API error: ${result.error || result.text || 'Unknown error'}`);
                     }
 
-                    // Extract evaluation from response
-                    // chess-api.com returns eval from the perspective of the side to move
-                    // After the move is made, it's the opponent's turn
-                    // Normalize all evaluations to White's perspective
+                    // chess-api.com returns eval from WHITE's perspective always
+                    // (positive = White advantage, negative = Black advantage)
                     let rawEval = result.eval !== undefined ? result.eval : 0;
 
-                    // After White's move (ply 1,3,5...), it's Black's turn, eval is from Black's POV
-                    // After Black's move (ply 2,4,6...), it's White's turn, eval is from White's POV
-                    // We need to flip the sign when it's Black's turn (after White moved)
-                    const evalFromWhitePerspective = isWhiteMove ? -rawEval : rawEval;
-                    const evaluation = Math.round(evalFromWhitePerspective * 100);
-                    const mate = result.mate ? (isWhiteMove ? -result.mate : result.mate) : null;
+                    // Convert to centipawns (rawEval is in pawns)
+                    const evaluation = Math.round(rawEval * 100);
+                    const mate = result.mate ?? null;
 
                     // Now win probability is always from White's perspective
                     const currWinProb = cpToWinProbability(evaluation);
