@@ -80,19 +80,19 @@ def classify_move_by_cp_loss(
     if cp_loss <= 5 and ('=' in move_san): # Promotion is often brilliant if best
         return "brilliant"
         
-    # Standard centipawn-based classification (Common chess.com-like bands)
-    if cp_loss <= 5:
-        return "great"      # < 5 cp loss
-    elif cp_loss <= 15:
-        return "excellent"  # < 15 cp loss
-    elif cp_loss <= 30:
-        return "good"       # < 30 cp loss
-    elif cp_loss <= 70:
-        return "inaccuracy" # < 70 cp loss
-    elif cp_loss <= 200:
-        return "mistake"    # < 200 cp loss
+    # Standard centipawn-based classification (Industry standard - more lenient)
+    if cp_loss <= 10:
+        return "great"      # < 10 cp loss
+    elif cp_loss <= 25:
+        return "excellent"  # < 25 cp loss
+    elif cp_loss <= 50:
+        return "good"       # < 50 cp loss
+    elif cp_loss <= 100:
+        return "inaccuracy" # 50-100 cp loss
+    elif cp_loss <= 250:
+        return "mistake"    # 100-250 cp loss
     else:
-        return "blunder"    # > 200 cp loss
+        return "blunder"    # > 250 cp loss (2.5 pawns)
 
 
 def classify_move(

@@ -21,7 +21,9 @@ export function EvaluationBar({
     if (mate !== null) {
         whitePercentage = mate > 0 ? 98 : 2;
     } else if (evaluation !== null) {
-        const sigmoid = 1 / (1 + Math.exp(-0.004 * evaluation));
+        // Using steeper sigmoid (0.006) for more dramatic bar movement
+        // +300cp (3 pawns) = ~86% bar, +500cp = ~95% bar
+        const sigmoid = 1 / (1 + Math.exp(-0.006 * evaluation));
         whitePercentage = Math.max(5, Math.min(95, sigmoid * 100));
     }
 
