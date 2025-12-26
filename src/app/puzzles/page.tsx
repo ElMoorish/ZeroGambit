@@ -18,7 +18,8 @@ import {
     Volume2,
     VolumeX,
     Trophy,
-    GraduationCap
+    GraduationCap,
+    Library
 } from "lucide-react";
 import Link from "next/link";
 import { Chess, Square } from "chess.js";
@@ -40,6 +41,13 @@ type Phase = "opening" | "middlegame" | "endgame" | "all";
 // Curriculum module info for display
 interface CurriculumMode {
     module: string;
+    minRating: number;
+    maxRating: number;
+    themes: string[];
+}
+
+interface LibraryMode {
+    source: string; // 'all', 'lichess', 'polgar', 'mate_in_n', etc.
     minRating: number;
     maxRating: number;
     themes: string[];
@@ -126,6 +134,10 @@ function PuzzlesPageContent() {
     const [isCoachLoading, setIsCoachLoading] = useState(false);
     const [voiceEnabled, setVoiceEnabled] = useState(true); // Voice toggle for AI coaching
     const { playMove, playCapture, playCheck, playBlunder, playBrilliant } = useSounds();
+
+    // Library Mode State
+    const [libraryMode, setLibraryMode] = useState<LibraryMode | null>(null);
+    const [showLibraryFilter, setShowLibraryFilter] = useState(false);
 
     // Speak coaching message using browser TTS (only if voice enabled)
     const speakCoaching = useCallback((text: string) => {
@@ -371,6 +383,12 @@ function PuzzlesPageContent() {
                     const themesStr = curriculumMode.themes.join(',');
                     url = `/api/py/api/puzzles/curriculum?minRating=${curriculumMode.minRating}&maxRating=${curriculumMode.maxRating}&themes=${themesStr}&count=50`;
                     console.log("Fetching curriculum puzzles from:", url);
+                } else if (libraryMode) {
+                    // Library mode - fetch by source, rating, and themes
+                    const themesStr = libraryMode.themes.join(',');
+                    const sourceParam = libraryMode.source !== 'all' ? `&source=${libraryMode.source}` : '';
+                    url = `/api/py/api/puzzles/library?minRating=${libraryMode.minRating}&maxRating=${libraryMode.maxRating}&themes=${themesStr}${sourceParam}&count=50`;
+                    console.log("Fetching library puzzles from:", url);
                 } else {
                     // Normal phase mode
                     url = `/api/py/api/puzzles/phase/${phase}?count=50`;
@@ -411,7 +429,7 @@ function PuzzlesPageContent() {
         };
 
         fetchPuzzles();
-    }, [phase, curriculumMode, loadPuzzle]);
+    }, [phase, curriculumMode, libraryMode, loadPuzzle]);
 
     const handleMove = useCallback((sourceSquare: string, targetSquare: string) => {
         if (!chess || !currentPuzzle || status !== "solving") return false;
@@ -590,28 +608,197 @@ function PuzzlesPageContent() {
             </header>
 
             <main className="container mx-auto px-4 py-6">
-                {/* Phase Tabs */}
-                <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                    {(Object.keys(PHASE_INFO) as Phase[]).map((p) => {
-                        const info = PHASE_INFO[p];
-                        const Icon = info.icon;
-                        const isActive = phase === p;
+                {/* Phase Tabs & Library Button */}
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                        {(Object.keys(PHASE_INFO) as Phase[]).map((p) => {
+                            const info = PHASE_INFO[p];
+                            const Icon = info.icon;
+                            // If we are in library mode, phases are not active
+                            const isActive = !libraryMode && !curriculumMode && phase === p;
 
-                        return (
-                            <button
-                                key={p}
-                                onClick={() => setPhase(p)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all whitespace-nowrap ${isActive
-                                    ? `${info.bg} ${info.border} ${info.color}`
-                                    : "border-border hover:bg-secondary"
-                                    }`}
-                            >
-                                <Icon className="w-4 h-4" />
-                                <span className="font-medium">{info.label}</span>
-                            </button>
-                        );
-                    })}
+                            return (
+                                <button
+                                    key={p}
+                                    onClick={() => {
+                                        setPhase(p);
+                                        setLibraryMode(null);
+                                        setCurriculumMode(null);
+                                    }}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all whitespace-nowrap ${isActive
+                                        ? `${info.bg} ${info.border} ${info.color}`
+                                        : "border-border hover:bg-secondary text-muted-foreground"
+                                        }`}
+                                >
+                                    <Icon className="w-4 h-4" />
+                                    <span className="font-medium">{info.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <button
+                        onClick={() => setShowLibraryFilter(true)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all whitespace-nowrap ${libraryMode
+                            ? "bg-purple-500/10 border-purple-500/30 text-purple-500"
+                            : "bg-secondary border-border hover:bg-secondary/80 text-foreground"
+                            }`}
+                    >
+                        <Library className="w-4 h-4" />
+                        <span className="font-medium">Browse Library</span>
+                    </button>
                 </div>
+
+                {/* Library Filter Modal */}
+                <AnimatePresence>
+                    {showLibraryFilter && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                        >
+                            <motion.div
+                                initial={{ scale: 0.95, y: 10 }}
+                                animate={{ scale: 1, y: 0 }}
+                                exit={{ scale: 0.95, y: 10 }}
+                                className="bg-card w-full max-w-lg border border-border rounded-2xl shadow-xl overflow-hidden"
+                            >
+                                <div className="p-6 border-b border-border flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Library className="w-5 h-5 text-primary" />
+                                        <h2 className="text-xl font-bold">Puzzle Library</h2>
+                                    </div>
+                                    <button onClick={() => setShowLibraryFilter(false)} className="p-2 hover:bg-secondary rounded-lg">
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                <div className="p-6 space-y-6">
+                                    {/* Source Selection */}
+                                    <div className="space-y-3">
+                                        <label className="text-sm font-medium text-muted-foreground">Collection</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {[
+                                                { id: "all", label: "All Puzzles" },
+                                                { id: "lichess", label: "Lichess (Community)" },
+                                                { id: "polgar", label: "Polgar 5334" },
+                                                { id: "mate_in_n", label: "Mate in N" },
+                                                { id: "hero", label: "Hero Puzzles" }
+                                            ].map((source) => (
+                                                <button
+                                                    key={source.id}
+                                                    onClick={() => setLibraryMode(prev => ({
+                                                        ...(prev || { minRating: 400, maxRating: 2500, themes: [] }),
+                                                        source: source.id,
+                                                        minRating: prev?.minRating || 400,
+                                                        maxRating: prev?.maxRating || 2500,
+                                                        themes: prev?.themes || []
+                                                    }))}
+                                                    className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all ${(libraryMode?.source || 'all') === source.id
+                                                        ? "bg-primary/10 border-primary text-primary"
+                                                        : "bg-secondary/50 border-transparent hover:bg-secondary"
+                                                        }`}
+                                                >
+                                                    {source.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Rating Range */}
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between">
+                                            <label className="text-sm font-medium text-muted-foreground">Difficulty (Rating)</label>
+                                            <span className="text-sm font-mono">{libraryMode?.minRating || 400} - {libraryMode?.maxRating || 2500}</span>
+                                        </div>
+                                        <div className="flex gap-4 items-center">
+                                            <input
+                                                type="range"
+                                                min="400"
+                                                max="3000"
+                                                step="100"
+                                                value={libraryMode?.minRating || 400}
+                                                onChange={(e) => setLibraryMode(prev => ({
+                                                    ...(prev || { source: 'all', themes: [], maxRating: 2500 }),
+                                                    source: prev?.source || 'all',
+                                                    themes: prev?.themes || [],
+                                                    maxRating: prev?.maxRating || 2500,
+                                                    minRating: parseInt(e.target.value)
+                                                }))}
+                                                className="w-full accent-primary h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+                                            />
+                                            <input
+                                                type="range"
+                                                min="400"
+                                                max="3000"
+                                                step="100"
+                                                value={libraryMode?.maxRating || 2500}
+                                                onChange={(e) => setLibraryMode(prev => ({
+                                                    ...(prev || { source: 'all', themes: [], minRating: 400 }),
+                                                    source: prev?.source || 'all',
+                                                    themes: prev?.themes || [],
+                                                    minRating: prev?.minRating || 400,
+                                                    maxRating: parseInt(e.target.value)
+                                                }))}
+                                                className="w-full accent-primary h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Themes (Simplified) */}
+                                    <div className="space-y-3">
+                                        <label className="text-sm font-medium text-muted-foreground">Themes</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {["mate", "fork", "pin", "endgame", "opening", "sacrifice"].map(theme => (
+                                                <button
+                                                    key={theme}
+                                                    onClick={() => {
+                                                        const currentThemes = libraryMode?.themes || [];
+                                                        const newThemes = currentThemes.includes(theme)
+                                                            ? currentThemes.filter(t => t !== theme)
+                                                            : [...currentThemes, theme];
+
+                                                        setLibraryMode(prev => ({
+                                                            ...(prev || { source: 'all', minRating: 400, maxRating: 2500 }),
+                                                            themes: newThemes,
+                                                            source: prev?.source || 'all',
+                                                            minRating: prev?.minRating || 400,
+                                                            maxRating: prev?.maxRating || 2500
+                                                        }));
+                                                    }}
+                                                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${libraryMode?.themes.includes(theme)
+                                                        ? "bg-primary text-primary-foreground border-primary"
+                                                        : "bg-secondary border-transparent text-muted-foreground hover:bg-secondary/80"
+                                                        }`}
+                                                >
+                                                    {theme}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => {
+                                            // Apply (just close, state is already set)
+                                            setShowLibraryFilter(false);
+                                            // Ensure we are not in curriculum mode
+                                            setCurriculumMode(null);
+                                            setPhase("all"); // Reset phase just in case logic uses it fallback
+                                            if (!libraryMode) {
+                                                // Default if opened and closed without interaction
+                                                setLibraryMode({ source: 'all', minRating: 400, maxRating: 2500, themes: [] });
+                                            }
+                                        }}
+                                        className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold text-lg hover:bg-primary/90 transition-colors"
+                                    >
+                                        Show Puzzles
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Main Content */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

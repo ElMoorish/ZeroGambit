@@ -341,8 +341,105 @@ class PuzzleService:
         selected = random.sample(all_puzzles, min(count, len(all_puzzles)))
         return [Puzzle(**p) for p in selected]
     
-    def get_random_puzzle(self, phase: Optional[str] = None) -> Puzzle:
+    async def get_library_puzzles(
+        self, 
+        min_rating: int = 400, 
+        max_rating: int = 3000,
+        themes: List[str] = [],
+        source: Optional[str] = None,
+        count: int = 50
+    ) -> List[Puzzle]:
+        """Get puzzles for the library with source and theme filtering"""
+        puzzles = []
+        
+        # Try DynamoDB first
+        if DYNAMODB_ENABLED:
+            try:
+                dynamo_service = get_dynamodb_puzzle_service()
+                
+                # If themes are requested, we might want to prioritize theme search
+                # But if source is requested, we might want that.
+                # For now, we use the rating-bucket approach which supports 'source' filtering in the service
+                
+                 # If themes present, we might need a combined approach or just filter in memory
+                dynamo_puzzles = dynamo_service.get_puzzles_by_rating_range(
+                    min_rating=min_rating,
+                    max_rating=max_rating,
+                    source=source, # Pass source to dynamo service
+                    count=count * 2 # converting to Puzzle object filters further, so fetch more
+                )
+                
+                # Filter by themes if provided
+                for p in dynamo_puzzles:
+                    puzzle_themes = p.get("themes", "")
+                    if isinstance(puzzle_themes, str):
+                        puzzle_themes_list = puzzle_themes.split(",")
+                    else:
+                        puzzle_themes_list = puzzle_themes
+                        
+                    # Theme filter logic
+                    if themes:
+                        # loose match: at least one theme
+                         if not any(t.lower() in [pt.lower() for pt in puzzle_themes_list] for t in themes):
+                             continue
+                    
+                    puzzles.append(Puzzle(
+                        id=p.get("puzzle_id", p.get("id", "unknown")),
+                        fen=p.get("fen", ""),
+                        moves=p.get("moves", []),
+                        rating=p.get("rating", 1200),
+                        themes=puzzle_themes_list,
+                        phase=p.get("phase", "middlegame")
+                    ))
+                
+                # If we got enough, return
+                if len(puzzles) >= count:
+                    return puzzles[:count]
+                    
+            except Exception as e:
+                print(f"DynamoDB library error: {e}")
+        
+        # Fallback to general curriculum logic (which covers MongoDB/Built-in)
+        # Note: general fallback doesn't support 'source' well yet, but that's acceptable for fallback
+        fallback_puzzles = await self.get_curriculum_puzzles(min_rating, max_rating, themes, count)
+        
+        # Merge if we have some from dynamo
+        return (puzzles + fallback_puzzles)[:count]
+    
+    async def get_random_puzzle(self, phase: Optional[str] = None) -> Puzzle:
         """Get a random puzzle, optionally filtered by phase"""
+        # Try DynamoDB first
+        if DYNAMODB_ENABLED:
+            try:
+                dynamo_service = get_dynamodb_puzzle_service()
+                # If phase is provided, we can use get_puzzles_by_phase and pick one
+                if phase:
+                    puzzles = dynamo_service.get_puzzles_by_phase(phase, count=5)
+                    if puzzles:
+                        p = random.choice(puzzles)
+                        return Puzzle(
+                            id=p.get("puzzle_id", p.get("id", "unknown")),
+                            fen=p.get("fen", ""),
+                            moves=p.get("moves", []),
+                            rating=p.get("rating", 1200),
+                            themes=p.get("themes", "").split(",") if isinstance(p.get("themes"), str) else p.get("themes", []),
+                            phase=p.get("phase", phase)
+                        )
+                else:
+                    # Random from any phase
+                    p = dynamo_service.get_random_puzzle()
+                    if p:
+                         return Puzzle(
+                            id=p.get("puzzle_id", p.get("id", "unknown")),
+                            fen=p.get("fen", ""),
+                            moves=p.get("moves", []),
+                            rating=p.get("rating", 1200),
+                            themes=p.get("themes", "").split(",") if isinstance(p.get("themes"), str) else p.get("themes", []),
+                            phase=p.get("phase", "middlegame")
+                        )
+            except Exception as e:
+                print(f"DynamoDB random puzzle error: {e}")
+
         if phase and phase in BUILT_IN_PUZZLES:
             puzzles = BUILT_IN_PUZZLES[phase]
         else:

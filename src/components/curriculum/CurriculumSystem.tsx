@@ -244,7 +244,7 @@ function PhaseDetailModal({
                             const isUnlocked = index === 0 || (progress[phase.modules[index - 1].id] || 0) >= module.requiredAccuracy;
 
                             // Build the puzzle URL with filters
-                            const puzzleUrl = `/puzzles?module=${module.id}&minRating=${module.ratingMin}&maxRating=${module.ratingMax}&themes=${module.themes.join(',')}`;
+                            const puzzleUrl = `/curriculum/${module.id}`;
 
                             const ModuleWrapper = isUnlocked ? 'a' : 'div';
 

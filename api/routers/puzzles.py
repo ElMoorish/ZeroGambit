@@ -55,6 +55,40 @@ async def get_random_puzzle(phase: Optional[str] = None):
     return puzzle_service.get_random_puzzle(phase)
 
 
+@router.get("/library", response_model=PuzzleListResponse)
+async def get_library_puzzles(
+    minRating: int = 400,
+    maxRating: int = 3000,
+    themes: Optional[str] = None,
+    source: Optional[str] = None,
+    count: int = 20
+):
+    """
+    Get puzzles from the library with advanced filtering.
+    - source: 'lichess', 'hero', 'polgar', etc.
+    - themes: comma-separated list of themes
+    - rating range
+    """
+    theme_list = themes.split(',') if themes else []
+    
+    # We reuse the curriculum service method for now, but we need to ensure deeper service support for 'source'
+    # Actually, let's call a dedicated method in puzzle_service if exists, or use the dynamodb service directly via puzzle_service wrapper
+    
+    puzzles = await puzzle_service.get_library_puzzles(
+        min_rating=minRating,
+        max_rating=maxRating,
+        themes=theme_list,
+        source=source,
+        count=count
+    )
+    
+    return PuzzleListResponse(
+        puzzles=[PuzzleResponse(**p.model_dump()) for p in puzzles],
+        phase="library",
+        total=len(puzzles)
+    )
+
+
 @router.get("/phase/{phase}", response_model=PuzzleListResponse)
 async def get_puzzles_by_phase(phase: str, count: int = 10):
     """Get puzzles for a specific game phase (opening, middlegame, endgame)"""

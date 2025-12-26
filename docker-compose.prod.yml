@@ -43,6 +43,15 @@ services:
         limits:
           memory: 3G
 
+  # Cloudflare Tunnel - Exposes Backend via HTTPS
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: gg-tunnel
+    restart: always
+    command: tunnel --url http://backend:8000
+    depends_on:
+      - backend
+
 volumes:
   mongodb_data:
     driver: local

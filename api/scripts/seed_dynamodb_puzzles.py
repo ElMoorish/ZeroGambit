@@ -480,14 +480,18 @@ def main():
     total = 0
     
     # Ask user what to seed
-    print("\n📋 Select what to seed:")
-    print("  1. Quick test (tactical + mate + endgame puzzles only)")
-    print("  2. Sample Lichess (10,000 puzzles)")
-    print("  3. Full Lichess (5.6M puzzles - takes 1-2 hours)")
-    print("  4. All sources with sample Lichess")
-    print("  5. All sources with full Lichess")
-    
-    choice = input("\nEnter choice (1-5): ").strip()
+    if len(sys.argv) > 1:
+        choice = sys.argv[1]
+        print(f"Auto-selecting choice: {choice}")
+    else:
+        print("\n📋 Select what to seed:")
+        print("  1. Quick test (tactical + mate + endgame puzzles only)")
+        print("  2. Sample Lichess (10,000 puzzles)")
+        print("  3. Full Lichess (5.6M puzzles - takes 1-2 hours)")
+        print("  4. All sources with sample Lichess")
+        print("  5. All sources with full Lichess")
+        
+        choice = input("\nEnter choice (1-5): ").strip()
     
     if choice == "1":
         total += seed_tactical_puzzles(table)
