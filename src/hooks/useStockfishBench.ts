@@ -91,17 +91,52 @@ export function useStockfishBench() {
                 }
 
                 // Create Stockfish worker
-                // Note: Path may need adjustment based on where stockfish.js is served
                 const worker = new Worker('/stockfish/stockfish.js');
                 workerRef.current = worker;
 
                 let benchOutput = '';
                 let nps = 0;
+                let uciReady = false;
+                let engineReady = false;
+
+                // Timeout if benchmark takes too long
+                const timeout = setTimeout(() => {
+                    console.warn('Benchmark timeout - using fallback');
+                    setStatus('Benchmark timeout');
+                    setIsRunning(false);
+                    worker.terminate();
+                    workerRef.current = null;
+
+                    const fallback: BenchmarkResult = {
+                        tier: 'club',
+                        nps: 500000,
+                        label: 'Club Player (timeout)',
+                        recommendations: TIER_CONFIG.club.recommendations,
+                    };
+                    setResult(fallback);
+                    resolve(fallback);
+                }, 30000); // 30 second timeout
 
                 worker.onmessage = (e: MessageEvent) => {
                     const message = e.data;
 
                     if (typeof message === 'string') {
+                        // UCI initialization complete
+                        if (message.includes('uciok')) {
+                            uciReady = true;
+                            setProgress(15);
+                            setStatus('UCI initialized, preparing engine...');
+                            worker.postMessage('isready');
+                        }
+
+                        // Engine is ready
+                        if (message.includes('readyok')) {
+                            engineReady = true;
+                            setProgress(30);
+                            setStatus('Engine ready, running benchmark...');
+                            worker.postMessage('bench');
+                        }
+
                         // Parse bench output for NPS
                         if (message.includes('Nodes/second')) {
                             const match = message.match(/Nodes\/second\s*:\s*(\d+)/);
@@ -111,15 +146,15 @@ export function useStockfishBench() {
                         }
 
                         // Track progress through bench phases
-                        if (message.includes('position')) {
-                            setProgress((prev) => Math.min(prev + 10, 90));
-                            setStatus('Running analysis...');
+                        if (message.includes('position') && engineReady) {
+                            setProgress((prev) => Math.min(prev + 8, 90));
                         }
 
                         benchOutput += message + '\n';
 
                         // Bench complete
                         if (message.includes('Total time') || message.includes('Nodes searched')) {
+                            clearTimeout(timeout);
                             setProgress(100);
                             setStatus('Benchmark complete!');
 
@@ -149,6 +184,7 @@ export function useStockfishBench() {
                 };
 
                 worker.onerror = (error) => {
+                    clearTimeout(timeout);
                     console.error('Stockfish worker error:', error);
                     setStatus('Benchmark failed');
                     setIsRunning(false);
@@ -166,21 +202,10 @@ export function useStockfishBench() {
                     resolve(fallback);
                 };
 
-                // Initialize UCI and run bench
+                // Start UCI initialization
                 setStatus('Starting UCI...');
-                setProgress(10);
+                setProgress(5);
                 worker.postMessage('uci');
-
-                setTimeout(() => {
-                    setProgress(20);
-                    setStatus('Engine ready, running benchmark...');
-                    worker.postMessage('isready');
-                }, 500);
-
-                setTimeout(() => {
-                    setProgress(30);
-                    worker.postMessage('bench');
-                }, 1000);
 
             } catch (error) {
                 console.error('Benchmark error:', error);
