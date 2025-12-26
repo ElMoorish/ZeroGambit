@@ -11,6 +11,35 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+export const metadata: Metadata = {
+  title: {
+    default: "ZeroGambit - AI Chess Coach & Analysis",
+    template: "%s | ZeroGambit"
+  },
+  description: "Master chess with ZeroGambit. Advanced AI analysis, personalized coaching, and grandmaster-level insights for every move.",
+  keywords: ["chess analysis", "stockfish", "ai chess coach", "chess improvement", "game review", "webrtc chess"],
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://zerogambit.app",
+    siteName: "ZeroGambit",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "ZeroGambit Platform",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ZeroGambit - AI Chess Coach",
+    description: "Analyze your games with the power of local AI and Stockfish.",
+    images: ["/og-image.png"],
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
