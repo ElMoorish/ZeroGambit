@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # MongoDB - Local database
+  mongodb:
+    image: mongo:7
+    container_name: gg-mongodb
+    restart: always
+    ports:
+      - "27017:27017" # Exposed for local debugging if needed, usually just internal
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=grandmaster_guard
+
+  # Backend - FastAPI with Stockfish
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: gg-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/grandmaster_guard
+      - STOCKFISH_PATH=/usr/local/bin/stockfish
+      # OLLAMA_URL=http://... (External API URL should be set here if using hybrid)
+    volumes:
+      - ./api:/app/api
+    depends_on:
+      - mongodb
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Resource limits for t3.medium stability
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+
+volumes:
+  mongodb_data:
+    driver: local
