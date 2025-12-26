@@ -1,26 +1,378 @@
 @import "tailwindcss";
 
+/* Grandmaster Guard - Zen Chess Theme "Stone & Sage" */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Stone & Sage Palette - Calming, cortisol-reducing colors */
+  --background: #1a1d21;
+  /* Charcoal */
+  --background-soft: #1e2227;
+  --foreground: #f5f3f0;
+  /* Warm White */
+
+  /* Surface colors */
+  --card: #252930;
+  /* Slate */
+  --card-foreground: #f5f3f0;
+  --border: #363b44;
+  --border-hover: #4a5059;
+
+  /* Primary accent - Sage Green */
+  --primary: #7fb285;
+  --primary-hover: #8fc095;
+  --primary-foreground: #1a1d21;
+
+  /* Secondary - Warm Gray */
+  --secondary: #2d3238;
+  --secondary-foreground: #a3a7ae;
+
+  /* Muted */
+  --muted: #252930;
+  --muted-foreground: #6b7280;
+  /* Stone */
+
+  /* Move classification colors - SOFT, not harsh */
+  --brilliant: #98d4a8;
+  /* Soft Mint */
+  --great: #8ec3d4;
+  /* Soft Teal */
+  --best: #7fb285;
+  /* Sage */
+  --excellent: #a8c9a0;
+  /* Light Sage */
+  --good: #b4c4be;
+  /* Muted Sage */
+  --inaccuracy: #d4a574;
+  /* Warm Amber */
+  --mistake: #c9a078;
+  /* Soft Orange */
+  --blunder: #c97b84;
+  /* Muted Rose - NOT harsh red */
+
+  /* Evaluation bar */
+  --eval-white: #f5f3f0;
+  --eval-black: #1a1d21;
+  --eval-equal: #3f4249;
+
+  /* Radius - extra rounded for calming effect */
+  --radius: 1rem;
+  --radius-lg: 1.5rem;
+
+  /* Transitions - smooth and slow for calm feel */
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-medium: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Stone & Sage colors for Tailwind utilities */
+  --color-background: #1a1d21;
+  --color-foreground: #f5f3f0;
+  --color-card: #252930;
+  --color-card-foreground: #f5f3f0;
+  --color-border: #363b44;
+  --color-primary: #7fb285;
+  /* Sage Green */
+  --color-primary-hover: #8fc095;
+  --color-primary-foreground: #1a1d21;
+  --color-secondary: #2d3238;
+  --color-secondary-foreground: #a3a7ae;
+  --color-muted: #252930;
+  --color-muted-foreground: #6b7280;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Force dark mode */
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
+  background: linear-gradient(135deg, var(--background) 0%, var(--background-soft) 100%);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+/* Smooth transitions for interactive elements - exclude grid/board components */
+button,
+a,
+input,
+.zen-card,
+.zen-button,
+.move-item,
+.coach-card {
+  transition: background-color var(--transition-medium),
+    border-color var(--transition-medium),
+    box-shadow var(--transition-medium),
+    opacity var(--transition-medium);
+}
+
+/* Chess board should NOT have transitions that affect layout */
+.chess-board,
+.chess-board * {
+  transition: none !important;
+}
+
+/* Custom scrollbar - subtle and calm */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
+/* ======== ZEN CHESS COMPONENTS ======== */
+
+/* Chess board - soft shadows, rounded */
+.chess-board {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    0 0 80px rgba(127, 178, 133, 0.05);
+}
+
+/* Zen card - elevated, rounded, calm */
+.zen-card {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.zen-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Zen button - soft glow, rounded */
+.zen-button {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(127, 178, 133, 0.2);
+}
+
+.zen-button:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 6px 24px rgba(127, 178, 133, 0.3);
+  transform: translateY(-1px);
+}
+
+.zen-button:active {
+  transform: translateY(0);
+}
+
+/* Zen input - calm focus state */
+.zen-input {
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  color: var(--foreground);
+  width: 100%;
+}
+
+.zen-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(127, 178, 133, 0.15);
+}
+
+/* ======== MOVE INDICATORS ======== */
+
+.move-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.move-dot.brilliant {
+  background: var(--brilliant);
+}
+
+.move-dot.great {
+  background: var(--great);
+}
+
+.move-dot.best {
+  background: var(--best);
+}
+
+.move-dot.good {
+  background: var(--good);
+}
+
+.move-dot.inaccuracy {
+  background: var(--inaccuracy);
+}
+
+.move-dot.mistake {
+  background: var(--mistake);
+}
+
+.move-dot.blunder {
+  background: var(--blunder);
+}
+
+/* Move item in list */
+.move-item {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.move-item:hover {
+  background: var(--secondary);
+}
+
+.move-item.active {
+  background: rgba(127, 178, 133, 0.2);
+  border-left: 3px solid var(--primary);
+}
+
+/* ======== COACH INSIGHTS ======== */
+
+.coach-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  border-left: 3px solid var(--primary);
+  animation: gentle-fade-in 0.5s ease-out;
+}
+
+.coach-card.warning {
+  border-left-color: var(--inaccuracy);
+}
+
+.coach-card.error {
+  border-left-color: var(--blunder);
+}
+
+/* ======== ANIMATIONS ======== */
+
+/* Gentle breathing animation */
+@keyframes gentle-pulse {
+
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.01);
+  }
+}
+
+/* Gentle fade in */
+@keyframes gentle-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slide in from left */
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in {
+  animation: gentle-fade-in 0.5s ease-out;
+}
+
+.animate-slide-in {
+  animation: slide-in-left 0.4s ease-out;
+}
+
+.animate-pulse {
+  animation: gentle-pulse 3s infinite ease-in-out;
+}
+
+/* ======== EVALUATION BAR ======== */
+
+.eval-bar {
+  background: linear-gradient(to top,
+      var(--eval-black),
+      var(--eval-black) var(--black-percentage, 50%),
+      var(--eval-white) var(--black-percentage, 50%),
+      var(--eval-white));
+  border-radius: var(--radius);
+  transition: --black-percentage 0.5s ease-out;
+}
+
+/* ======== GRAPH STYLING ======== */
+
+.recharts-tooltip-wrapper {
+  outline: none !important;
+}
+
+.recharts-default-tooltip {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ======== UTILITY CLASSES ======== */
+
+.glass {
+  background: rgba(37, 41, 48, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.text-primary {
+  color: var(--primary);
+}
+
+/* Focus visible for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }

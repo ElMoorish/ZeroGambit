@@ -1,0 +1,77 @@
+# Backend Dockerfile - FastAPI with Stockfish bundled
+FROM python:3.11-slim
+
+# Install dependencies for Stockfish and Node.js
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    curl \
+    gnupg \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install Stockfish 16
+RUN wget -q https://github.com/official-stockfish/Stockfish/releases/download/sf_16/stockfish-ubuntu-x86-64-avx2.tar \
+    && tar -xf stockfish-ubuntu-x86-64-avx2.tar \
+    && mv stockfish/stockfish-ubuntu-x86-64-avx2 /usr/local/bin/stockfish \
+    && chmod +x /usr/local/bin/stockfish \
+    && rm -rf stockfish* \
+    && stockfish quit
+
+# Install Node.js 20 (for Remotion video rendering)
+RUN mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get install -y nodejs \
+    && npm install -g npm@latest
+
+# Install dependencies for Chrome/Remotion (headless browser)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libnss3 \
+    libdbus-1-3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libglib2.0-0 \
+    libxdamage-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Stockfish path environment variable
+ENV STOCKFISH_PATH=/usr/local/bin/stockfish
+
+# Set working directory
+WORKDIR /app
+
+# Setup Video Project (Copy separately to cache dependencies)
+# We copy package.json first
+COPY video/package.json video/package-lock.json ./video/
+# Install video dependencies (including Remotion)
+RUN cd video && npm ci
+
+# Copy and install Python dependencies
+COPY api/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY api/ ./api/
+COPY video/ ./video/
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import httpx; httpx.get('http://localhost:8000/api/health')" || exit 1
+
+# Run the application
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

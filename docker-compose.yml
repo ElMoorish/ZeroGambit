@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # MongoDB - Local database for development
+  mongodb:
+    image: mongo:7
+    container_name: gg-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=grandmaster_guard
+
+  # Backend - FastAPI with Stockfish
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: gg-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/grandmaster_guard
+      - STOCKFISH_PATH=/usr/local/bin/stockfish
+      - OLLAMA_URL=http://ollama:11434
+    volumes:
+      - ./api:/app/api
+      - ./video:/app/video
+      - video_node_modules:/app/video/node_modules
+    depends_on:
+      - mongodb
+      - ollama
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend - Next.js
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+        - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+        - NEXT_PUBLIC_CLERK_SIGN_IN_URL=${NEXT_PUBLIC_CLERK_SIGN_IN_URL}
+        - NEXT_PUBLIC_CLERK_SIGN_UP_URL=${NEXT_PUBLIC_CLERK_SIGN_UP_URL}
+    container_name: gg-frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - BACKEND_URL=http://backend:8000
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
+
+  # Ollama - Local AI for chess insights
+  ollama:
+    image: ollama/ollama:latest
+    container_name: gg-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    healthcheck:
+      test: [ "CMD", "ollama", "list" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mongodb_data:
+    driver: local
+  ollama_data:
+    driver: local
+  video_node_modules:
+    driver: local
