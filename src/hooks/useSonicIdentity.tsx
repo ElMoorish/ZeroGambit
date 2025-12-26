@@ -40,23 +40,38 @@ export function useSonicIdentity() {
             setIsMuted(savedMuted === 'true');
         }
 
+        // Load sounds with error handling for missing files
         Object.entries(SOUNDS).forEach(([key, config]) => {
             if (key !== 'ambient') {
-                const howl = new Howl({
-                    src: [config.src],
-                    volume: config.volume || 0.5,
-                    preload: true,
-                });
-                soundsRef.current.set(key, howl);
+                try {
+                    const howl = new Howl({
+                        src: [config.src],
+                        volume: config.volume || 0.5,
+                        preload: true,
+                        onloaderror: () => {
+                            console.debug(`[Audio] Sound not found: ${config.src}`);
+                        },
+                    });
+                    soundsRef.current.set(key, howl);
+                } catch {
+                    // Silently fail - sounds are optional
+                }
             }
         });
 
-        ambientRef.current = new Howl({
-            src: [SOUNDS.ambient.src],
-            volume: SOUNDS.ambient.volume,
-            loop: true,
-            preload: true,
-        });
+        try {
+            ambientRef.current = new Howl({
+                src: [SOUNDS.ambient.src],
+                volume: SOUNDS.ambient.volume,
+                loop: true,
+                preload: true,
+                onloaderror: () => {
+                    console.debug(`[Audio] Ambient sound not found`);
+                },
+            });
+        } catch {
+            // Silently fail - ambient is optional
+        }
 
         return () => {
             soundsRef.current.forEach(sound => sound.unload());
@@ -111,8 +126,8 @@ export function SonicToggle() {
     const { isMuted, toggleMute } = useSonicIdentity();
 
     const buttonClass = `fixed bottom-4 left-4 z-50 p-3 rounded-full border transition-all ${isMuted
-            ? 'bg-card border-border text-muted-foreground hover:text-foreground'
-            : 'bg-primary/10 border-primary/30 text-primary'
+        ? 'bg-card border-border text-muted-foreground hover:text-foreground'
+        : 'bg-primary/10 border-primary/30 text-primary'
         }`;
 
     return (

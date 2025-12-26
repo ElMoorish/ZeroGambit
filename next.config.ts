@@ -29,11 +29,13 @@ const nextConfig: NextConfig = {
   },
 
   // Rewrites to proxy requests to Python backend
+  // Frontend calls: /api/py/api/health -> Backend: /api/health
   async rewrites() {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
     return [
       {
         source: '/api/py/:path*',
-        destination: process.env.BACKEND_URL ? `${process.env.BACKEND_URL}/api/:path*` : 'http://localhost:8000/api/:path*',
+        destination: `${backendUrl}/:path*`,
       },
     ]
   },
