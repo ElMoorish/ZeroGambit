@@ -63,17 +63,44 @@ const CLASSIFICATION_COLORS: Record<string, string> = {
     normal: "#6b7280",      /* Stone Gray */
 };
 
-// Classify move based on evaluation change
-function classifyMove(prevWinProb: number, currWinProb: number, isWhiteMove: boolean): string {
-    const drop = isWhiteMove ? (prevWinProb - currWinProb) : (currWinProb - prevWinProb);
+// Classify move based on centipawn loss (Chess.com/Lichess standard)
+// prevEval and currEval are in centipawns, from White's perspective
+function classifyMoveByCpLoss(
+    prevEval: number | null,
+    currEval: number | null,
+    isWhiteMove: boolean,
+    moveNumber: number
+): string {
+    // Opening book (first 10 moves by each side)
+    if (moveNumber <= 10) {
+        return "book";
+    }
 
-    if (drop > 20) return "blunder";
-    if (drop > 10) return "mistake";
-    if (drop > 5) return "inaccuracy";
-    if (drop < -10) return "brilliant";
-    if (drop < -5) return "great";
-    if (Math.abs(drop) <= 2) return "best";
-    return "normal";
+    // Handle missing evaluations
+    if (prevEval === null || currEval === null) {
+        return "normal";
+    }
+
+    // Calculate centipawn loss from player's perspective
+    // For White: positive eval is good. Losing eval means cp_loss is positive.
+    // For Black: negative eval is good. Gaining positive eval is bad for Black.
+    let cpLoss: number;
+    if (isWhiteMove) {
+        // White moved. If eval dropped (from White's POV), that's a loss.
+        cpLoss = prevEval - currEval;
+    } else {
+        // Black moved. If eval increased (from White's POV), that's bad for Black.
+        cpLoss = currEval - prevEval;
+    }
+
+    // Classification thresholds (industry standard)
+    if (cpLoss <= 0) return "best";       // Improved or maintained position
+    if (cpLoss <= 10) return "great";     // < 10 cp loss
+    if (cpLoss <= 25) return "excellent"; // < 25 cp loss
+    if (cpLoss <= 50) return "good";      // < 50 cp loss
+    if (cpLoss <= 100) return "inaccuracy"; // 50-100 cp loss
+    if (cpLoss <= 250) return "mistake";  // 100-250 cp loss
+    return "blunder";                     // > 250 cp loss
 }
 
 export default function AnalysisPage({ params }: PageProps) {
@@ -560,8 +587,9 @@ export default function AnalysisPage({ params }: PageProps) {
                         console.log(`[Analysis] Move ${i + 1} (${move.san}): rawEval=${rawEval?.toFixed(2)}, normalized=${evaluation}cp, winProb=${currWinProb.toFixed(1)}%, prevWinProb=${prevWinProb.toFixed(1)}%`);
                     }
 
-                    // Classify the move based on eval change
-                    const classification = classifyMove(prevWinProb, currWinProb, isWhiteMove);
+                    // Classify the move based on centipawn loss
+                    const moveNumber = Math.ceil(move.ply / 2);
+                    const classification = classifyMoveByCpLoss(prevEval, evaluation, isWhiteMove, moveNumber);
 
                     newEvaluations.push({
                         ply: move.ply,
@@ -710,7 +738,7 @@ export default function AnalysisPage({ params }: PageProps) {
 
         const newEvaluations: typeof evaluations = [];
         const newMessages: typeof coachMessages = [];
-        let prevWinProb = 50;
+        let prevEval: number | null = 0;  // Track previous evaluation in centipawns
 
         for (let i = 0; i < moves.length; i++) {
             const move = moves[i];
@@ -733,9 +761,10 @@ export default function AnalysisPage({ params }: PageProps) {
                     mate = -mate;
                 }
 
-                const currWinProb = cpToWinProbability(evaluation || 0);
-
-                const classification = classifyMove(prevWinProb, currWinProb, isWhiteMove);
+                // Track previous eval for CP-based classification
+                const moveNumber = Math.ceil(move.ply / 2);
+                const classification = classifyMoveByCpLoss(prevEval, evaluation, isWhiteMove, moveNumber);
+                prevEval = evaluation;
 
                 newEvaluations.push({
                     ply: move.ply,
@@ -778,11 +807,10 @@ export default function AnalysisPage({ params }: PageProps) {
                     });
                 }
 
-                prevWinProb = currWinProb;
                 moves[i].classification = classification;
 
                 // Debug log
-                console.log(`[WASM] Move ${i + 1} (${move.san}): eval=${evaluation}cp, winProb=${currWinProb.toFixed(1)}%`);
+                console.log(`[WASM] Move ${i + 1} (${move.san}): eval=${evaluation}cp, classification=${classification}`);
             } catch (error) {
                 console.error(`Analysis failed for move ${i + 1}:`, error);
             }

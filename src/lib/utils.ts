@@ -14,22 +14,44 @@ export function cpToWinProbability(centipawns: number): number {
 }
 
 /**
- * Classify a move based on win probability drop
+ * Classify a move based on centipawn loss (industry standard)
+ * @param prevEval - Previous evaluation in centipawns (from White's perspective)
+ * @param currEval - Current evaluation in centipawns (from White's perspective)
+ * @param isWhiteToMove - True if White made this move
+ * @param moveNumber - Move number (1-indexed)
  */
 export function classifyMove(
-  prevWinProb: number,
-  currWinProb: number,
-  isWhiteToMove: boolean
-): "brilliant" | "great" | "best" | "excellent" | "inaccuracy" | "mistake" | "blunder" | "normal" {
-  // Adjust for perspective (positive drop is bad for the player who moved)
-  const drop = isWhiteToMove ? prevWinProb - currWinProb : currWinProb - prevWinProb
+  prevEval: number | null,
+  currEval: number | null,
+  isWhiteToMove: boolean,
+  moveNumber: number = 99
+): "brilliant" | "great" | "best" | "excellent" | "good" | "book" | "inaccuracy" | "mistake" | "blunder" | "normal" {
+  // Opening book (first 10 moves by each side)
+  if (moveNumber <= 10) {
+    return "book"
+  }
 
-  if (drop > 20) return "blunder"
-  if (drop > 10) return "mistake"
-  if (drop > 5) return "inaccuracy"
-  if (drop < -5) return "great" // Opponent made it worse for themselves
-  if (drop <= 0) return "best"
-  return "normal"
+  // Handle missing evaluations
+  if (prevEval === null || currEval === null) {
+    return "normal"
+  }
+
+  // Calculate centipawn loss from player's perspective
+  let cpLoss: number
+  if (isWhiteToMove) {
+    cpLoss = prevEval - currEval
+  } else {
+    cpLoss = currEval - prevEval
+  }
+
+  // Classification thresholds (Chess.com/Lichess standard)
+  if (cpLoss <= 0) return "best"       // Improved or maintained position
+  if (cpLoss <= 10) return "great"     // < 10 cp loss
+  if (cpLoss <= 25) return "excellent" // < 25 cp loss
+  if (cpLoss <= 50) return "good"      // < 50 cp loss
+  if (cpLoss <= 100) return "inaccuracy" // 50-100 cp loss
+  if (cpLoss <= 250) return "mistake"  // 100-250 cp loss
+  return "blunder"                     // > 250 cp loss
 }
 
 /**
