@@ -1,15 +1,23 @@
 """
-Puzzle Service - Fetches puzzles from Lichess API
-Lichess provides free access to millions of chess puzzles
+Puzzle Service - Fetches puzzles from DynamoDB / Lichess API
+Supports multiple sources: Lichess, tactical, mate, endgame puzzles
 """
 
 import httpx
 from typing import Optional, List
 from pydantic import BaseModel
 import random
-import random
 import chess
+import os
 from ..database import get_puzzles_collection
+
+# Try to import DynamoDB service
+try:
+    from .dynamodb_service import get_dynamodb_puzzle_service, DynamoDBPuzzleService
+    DYNAMODB_ENABLED = os.getenv("AWS_ACCESS_KEY_ID") is not None
+except ImportError:
+    DYNAMODB_ENABLED = False
+    DynamoDBPuzzleService = None
 
 # Lichess puzzle themes mapped to game phases
 PHASE_THEMES = {
@@ -210,11 +218,30 @@ class PuzzleService:
         return None
     
     async def get_puzzles_by_phase(self, phase: str, count: int = 10) -> List[Puzzle]:
-        """Get puzzles for a specific game phase from DB or built-in"""
-        # Try DB
-        collection = get_puzzles_collection()
+        """Get puzzles for a specific game phase from DynamoDB, MongoDB, or built-in"""
         puzzles = []
         
+        # Try DynamoDB first (fastest)
+        if DYNAMODB_ENABLED:
+            try:
+                dynamo_service = get_dynamodb_puzzle_service()
+                dynamo_puzzles = dynamo_service.get_puzzles_by_phase(phase, count)
+                for p in dynamo_puzzles:
+                    puzzles.append(Puzzle(
+                        id=p.get("puzzle_id", p.get("id", "unknown")),
+                        fen=p.get("fen", ""),
+                        moves=p.get("moves", []),
+                        rating=p.get("rating", 1200),
+                        themes=p.get("themes", "").split(",") if isinstance(p.get("themes"), str) else p.get("themes", []),
+                        phase=p.get("phase", phase)
+                    ))
+                if puzzles:
+                    return puzzles
+            except Exception as e:
+                print(f"DynamoDB error: {e}")
+        
+        # Try MongoDB as fallback
+        collection = get_puzzles_collection()
         if collection is not None:
             try:
                 pipeline = [
@@ -222,18 +249,15 @@ class PuzzleService:
                     {"$sample": {"size": count}}
                 ]
                 async for doc in collection.aggregate(pipeline):
-                    # Ensure doc has all required fields?
-                    # Seed script puts them there.
-                    # Exclude _id
                     if "_id" in doc: del doc["_id"]
                     puzzles.append(Puzzle(**doc))
             except Exception as e:
-                print(f"Error fetching puzzles from DB: {e}")
+                print(f"Error fetching puzzles from MongoDB: {e}")
         
         if puzzles:
             return puzzles
 
-        # Fallback to built-in (sync logic wrapped)
+        # Fallback to built-in
         if phase not in BUILT_IN_PUZZLES:
             phase = "middlegame"
         
@@ -250,23 +274,47 @@ class PuzzleService:
         count: int = 50
     ) -> List[Puzzle]:
         """Get puzzles filtered by rating range and themes for curriculum training"""
-        from api.database import get_db
+        puzzles = []
         
+        # Try DynamoDB first (fastest)
+        if DYNAMODB_ENABLED:
+            try:
+                dynamo_service = get_dynamodb_puzzle_service()
+                dynamo_puzzles = dynamo_service.get_curriculum_puzzles(
+                    min_rating=min_rating,
+                    max_rating=max_rating,
+                    themes=themes if themes else None,
+                    count=count
+                )
+                for p in dynamo_puzzles:
+                    theme_list = p.get("themes", "")
+                    if isinstance(theme_list, str):
+                        theme_list = theme_list.split(",")
+                    puzzles.append(Puzzle(
+                        id=p.get("puzzle_id", p.get("id", "unknown")),
+                        fen=p.get("fen", ""),
+                        moves=p.get("moves", []),
+                        rating=p.get("rating", 1200),
+                        themes=theme_list,
+                        phase=p.get("phase", "middlegame")
+                    ))
+                if puzzles:
+                    return puzzles
+            except Exception as e:
+                print(f"DynamoDB curriculum error: {e}")
+        
+        # Fallback to MongoDB
+        from api.database import get_db
         db = get_db()
         if db is not None:
             try:
-                # Build query with rating range
                 query = {
                     "rating": {"$gte": min_rating, "$lte": max_rating}
                 }
-                
-                # Add theme filter if specified
                 if themes:
                     query["themes"] = {"$in": themes}
                 
-                # Fetch from MongoDB
                 cursor = db.puzzles.find(query).limit(count)
-                puzzles = []
                 async for doc in cursor:
                     puzzles.append(Puzzle(
                         id=doc.get("id", str(doc.get("_id"))),
@@ -280,14 +328,13 @@ class PuzzleService:
                 if puzzles:
                     return puzzles
             except Exception as e:
-                print(f"Error fetching curriculum puzzles: {e}")
+                print(f"Error fetching curriculum puzzles from MongoDB: {e}")
         
-        # Fallback to built-in puzzles filtered by rating
+        # Fallback to built-in puzzles
         all_puzzles = []
         for phase_puzzles in BUILT_IN_PUZZLES.values():
             for p in phase_puzzles:
                 if min_rating <= p.get("rating", 1000) <= max_rating:
-                    # Check themes if specified
                     if not themes or any(t in p.get("themes", []) for t in themes):
                         all_puzzles.append(p)
         
