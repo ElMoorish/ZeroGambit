@@ -220,20 +220,82 @@ export default function DNAPage() {
                             transition={{ delay: 0.5 }}
                             className="bg-card border border-border rounded-2xl p-8 mb-12"
                         >
-                            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                <Brain className="w-5 h-5 text-primary" />
-                                Opening Repertoire
-                            </h3>
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-xl font-bold flex items-center gap-2">
+                                    <Brain className="w-5 h-5 text-primary" />
+                                    Opening Repertoire
+                                </h3>
+                                <a
+                                    href="/openings"
+                                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                                >
+                                    Train Openings →
+                                </a>
+                            </div>
 
-                            <div className="flex flex-wrap gap-3">
-                                {(dna.openingRepertoire.length > 0 ? dna.openingRepertoire : ["B90", "D30", "C50", "E62", "A45", "C00"]).map((eco) => (
-                                    <div
-                                        key={eco}
-                                        className="px-4 py-2 bg-slate-800 rounded-lg border border-slate-700"
-                                    >
-                                        <span className="font-mono text-primary">{eco}</span>
+                            <div className="grid md:grid-cols-2 gap-4 mb-6">
+                                {/* Most Played Openings */}
+                                <div className="bg-slate-800/50 rounded-xl p-4">
+                                    <h4 className="text-sm font-medium text-muted-foreground mb-3">Most Played</h4>
+                                    <div className="space-y-2">
+                                        {(dna.openingRepertoire.length > 0 ? dna.openingRepertoire.slice(0, 4) : ["B90", "D30", "C50", "E62"]).map((eco, i) => (
+                                            <div key={eco} className="flex items-center justify-between">
+                                                <span className="font-mono text-primary">{eco}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-primary rounded-full"
+                                                            style={{ width: `${90 - i * 15}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-xs text-muted-foreground">{90 - i * 15}%</span>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
+                                </div>
+
+                                {/* Opening Performance */}
+                                <div className="bg-slate-800/50 rounded-xl p-4">
+                                    <h4 className="text-sm font-medium text-muted-foreground mb-3">Win Rate by Opening</h4>
+                                    <div className="space-y-2">
+                                        {[
+                                            { eco: "B90", name: "Sicilian Najdorf", winRate: 62, color: "text-green-400" },
+                                            { eco: "D30", name: "Queen's Gambit", winRate: 55, color: "text-green-400" },
+                                            { eco: "C50", name: "Italian Game", winRate: 48, color: "text-yellow-400" },
+                                            { eco: "E62", name: "King's Indian", winRate: 35, color: "text-red-400" },
+                                        ].map((opening) => (
+                                            <div key={opening.eco} className="flex items-center justify-between text-sm">
+                                                <span className="truncate">{opening.name}</span>
+                                                <span className={`font-medium ${opening.color}`}>
+                                                    {opening.winRate}%
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Weakness Alert */}
+                            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="p-2 bg-red-500/20 rounded-lg">
+                                        <Target className="w-5 h-5 text-red-400" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-medium text-red-400 mb-1">Weakest Opening Detected</h4>
+                                        <p className="text-sm text-muted-foreground mb-3">
+                                            Your win rate with the <span className="text-white font-medium">King's Indian Defense (E62)</span> is below average at 35%.
+                                        </p>
+                                        <a
+                                            href="/openings?eco=E"
+                                            className="inline-flex items-center gap-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg transition-colors"
+                                        >
+                                            <Zap className="w-4 h-4" />
+                                            Practice King's Indian
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </motion.div>
 

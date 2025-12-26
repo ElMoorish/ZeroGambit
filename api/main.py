@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-from api.routers import games, captcha, analysis, puzzles, coach, content
+from api.routers import games, captcha, analysis, puzzles, coach, content, openings
 from api.database import connect_db, close_db
 
 
@@ -54,6 +54,7 @@ app.include_router(analysis.router, tags=["Analysis"])
 app.include_router(puzzles.router, tags=["Puzzles"])
 app.include_router(coach.router, tags=["Coach"])  # LangGraph AI Coach
 app.include_router(content.router, tags=["Content"])  # Video Content Pipeline
+app.include_router(openings.router, tags=["Openings"])  # Opening Repertoire
 
 # Mount static files for generated videos
 from fastapi.staticfiles import StaticFiles
