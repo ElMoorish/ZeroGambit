@@ -231,12 +231,27 @@ class DynamoDBPuzzleService:
     ) -> List[Dict]:
         """Get puzzles for curriculum-based training"""
         # Efficiently query with theme filters pushed to DynamoDB
-        return self.get_puzzles_by_rating_range(
+        puzzles = self.get_puzzles_by_rating_range(
             min_rating=min_rating, 
             max_rating=max_rating, 
             count=count,
             themes=themes
         )
+        
+        # Fallback: If strict theme search yields nothing (or too few),
+        # fetch generic puzzles in that rating range to prevent empty state.
+        if len(puzzles) < 5:
+            # print(f"Curriculum: Low match count ({len(puzzles)}) for themes {themes}, fetching fallback.")
+            fallback = self.get_puzzles_by_rating_range(
+                min_rating=min_rating,
+                max_rating=max_rating,
+                count=count - len(puzzles),
+                themes=None # No theme filter
+            )
+            puzzles.extend(fallback)
+            
+        random.shuffle(puzzles)
+        return puzzles[:count]
     
     def get_random_puzzle(self) -> Optional[Dict]:
         """Get a single random puzzle"""
