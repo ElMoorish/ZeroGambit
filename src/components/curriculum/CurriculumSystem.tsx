@@ -336,55 +336,155 @@ function PhaseDetailModal({
 }
 
 /**
- * Skill Tree Visualization - Shows overall progress
+ * Skill Tree Visualization - Stunning Interactive Journey Map
  */
 export function SkillTreeVisualization() {
     return (
-        <div className="relative py-12">
-            {/* Central Line */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-amber-500/50 via-emerald-500/50 to-purple-500/50" />
+        <div className="relative py-16 px-4">
+            {/* Background Glow */}
+            <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
+                <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
+                <div className="absolute bottom-1/4 left-1/2 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+            </div>
 
-            {/* Phases */}
-            {CURRICULUM_PHASES.map((phase, index) => {
-                const Icon = phase.icon;
-                const isLeft = index % 2 === 0;
+            {/* Animated Central Path */}
+            <svg className="absolute left-1/2 top-0 -translate-x-1/2 h-full w-32 overflow-visible" style={{ zIndex: 0 }}>
+                <defs>
+                    <linearGradient id="pathGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.8" />
+                        <stop offset="50%" stopColor="#10b981" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="#a855f7" stopOpacity="0.8" />
+                    </linearGradient>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                        <feMerge>
+                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+                <path
+                    d="M 64 0 Q 64 150 64 300 Q 64 450 64 600"
+                    stroke="url(#pathGradient)"
+                    strokeWidth="4"
+                    fill="none"
+                    filter="url(#glow)"
+                    strokeDasharray="10 5"
+                />
+            </svg>
 
-                return (
-                    <motion.div
-                        key={phase.id}
-                        initial={{ opacity: 0, x: isLeft ? -50 : 50 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: index * 0.2 }}
-                        className={`relative flex items-center mb-16 last:mb-0 ${isLeft ? "justify-start" : "justify-end"
-                            }`}
-                    >
-                        {/* Connector Dot */}
-                        <div className="absolute left-1/2 -translate-x-1/2">
-                            <div className={`w-4 h-4 rounded-full ${phase.color.replace("text-", "bg-")} ring-4 ring-background`} />
-                        </div>
+            {/* Phase Cards */}
+            <div className="relative z-10 space-y-24">
+                {CURRICULUM_PHASES.map((phase, index) => {
+                    const Icon = phase.icon;
+                    const isLeft = index % 2 === 0;
 
-                        {/* Card */}
-                        <div className={`w-5/12 ${isLeft ? "pr-8 text-right" : "pl-8 text-left"}`}>
-                            <div className={`inline-flex items-center gap-2 mb-2 ${phase.color}`}>
-                                <Icon className="w-5 h-5" />
-                                <span className="font-bold">{phase.title}</span>
+                    return (
+                        <motion.div
+                            key={phase.id}
+                            initial={{ opacity: 0, x: isLeft ? -100 : 100, scale: 0.8 }}
+                            whileInView={{ opacity: 1, x: 0, scale: 1 }}
+                            viewport={{ once: true, margin: "-100px" }}
+                            transition={{ duration: 0.6, delay: index * 0.1, type: "spring" }}
+                            className={`flex items-center ${isLeft ? "justify-start" : "justify-end"}`}
+                        >
+                            {/* Connecting Line to Center */}
+                            <div className={`absolute left-1/2 w-32 h-1 ${isLeft ? "-translate-x-full" : ""}`}>
+                                <motion.div
+                                    initial={{ scaleX: 0 }}
+                                    whileInView={{ scaleX: 1 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: index * 0.2 + 0.3 }}
+                                    className={`h-full bg-gradient-to-r ${isLeft
+                                        ? `from-transparent ${phase.bgColor.replace("from-", "to-").replace("to-", "from-")}`
+                                        : `${phase.bgColor.replace("from-", "from-").replace("to-", "to-")} to-transparent`
+                                        }`}
+                                    style={{ transformOrigin: isLeft ? "right" : "left" }}
+                                />
                             </div>
-                            <p className="text-sm text-muted-foreground">{phase.description}</p>
-                            <div className="mt-3 flex flex-wrap gap-2 justify-end">
-                                {phase.modules.slice(0, 3).map((m) => (
-                                    <span
-                                        key={m.id}
-                                        className="px-2 py-1 text-xs bg-white/5 rounded-full border border-white/10"
-                                    >
-                                        {m.title}
-                                    </span>
-                                ))}
+
+                            {/* Glowing Node at Center */}
+                            <motion.div
+                                className="absolute left-1/2 -translate-x-1/2"
+                                initial={{ scale: 0 }}
+                                whileInView={{ scale: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: index * 0.2 + 0.2, type: "spring", stiffness: 200 }}
+                            >
+                                <div className={`relative w-12 h-12 rounded-full ${phase.color.replace("text-", "bg-")} shadow-lg`}>
+                                    <div className={`absolute inset-0 rounded-full ${phase.color.replace("text-", "bg-")} animate-ping opacity-30`} />
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <Icon className="w-5 h-5 text-white" />
+                                    </div>
+                                </div>
+                            </motion.div>
+
+                            {/* Phase Card */}
+                            <div className={`w-5/12 ${isLeft ? "pr-16 text-right" : "pl-16 text-left"}`}>
+                                <motion.div
+                                    whileHover={{ scale: 1.02, y: -4 }}
+                                    className={`p-6 rounded-2xl bg-gradient-to-br ${phase.bgColor} border ${phase.borderColor} backdrop-blur-sm shadow-xl cursor-pointer transition-all`}
+                                >
+                                    {/* Phase Header */}
+                                    <div className={`flex items-center gap-3 mb-3 ${isLeft ? "justify-end" : "justify-start"}`}>
+                                        <div className={`p-2 rounded-xl bg-white/10 ${phase.color}`}>
+                                            <Icon className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className={`text-xl font-bold ${phase.color}`}>{phase.title}</h3>
+                                            <p className="text-xs text-white/60">{phase.subtitle}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Description */}
+                                    <p className="text-sm text-white/80 mb-4">{phase.description}</p>
+
+                                    {/* Modules Preview */}
+                                    <div className={`flex flex-wrap gap-2 ${isLeft ? "justify-end" : "justify-start"}`}>
+                                        {phase.modules.map((m, i) => (
+                                            <motion.span
+                                                key={m.id}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                whileInView={{ opacity: 1, y: 0 }}
+                                                viewport={{ once: true }}
+                                                transition={{ delay: index * 0.1 + i * 0.05 + 0.5 }}
+                                                className="px-3 py-1.5 text-xs bg-white/10 rounded-full border border-white/20 hover:bg-white/20 transition-colors"
+                                            >
+                                                {m.title}
+                                            </motion.span>
+                                        ))}
+                                    </div>
+
+                                    {/* Rating Range */}
+                                    <div className={`mt-4 pt-4 border-t border-white/10 flex items-center gap-2 text-xs text-white/60 ${isLeft ? "justify-end" : "justify-start"}`}>
+                                        <span>📊</span>
+                                        <span>{phase.modules[0].ratingMin} - {phase.modules[phase.modules.length - 1].ratingMax} Rating</span>
+                                    </div>
+                                </motion.div>
                             </div>
-                        </div>
-                    </motion.div>
-                );
-            })}
+                        </motion.div>
+                    );
+                })}
+            </div>
+
+            {/* Bottom Achievement */}
+            <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="relative z-10 mt-20 text-center"
+            >
+                <div className="inline-flex flex-col items-center gap-3 px-8 py-6 rounded-2xl bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-purple-500/20 border border-white/10 backdrop-blur">
+                    <div className="flex items-center gap-2">
+                        <Trophy className="w-8 h-8 text-amber-400" />
+                        <span className="text-2xl font-bold bg-gradient-to-r from-amber-400 via-emerald-400 to-purple-400 bg-clip-text text-transparent">
+                            Master Level
+                        </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Complete all phases to achieve chess mastery</p>
+                </div>
+            </motion.div>
         </div>
     );
 }

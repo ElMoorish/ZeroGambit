@@ -63,6 +63,24 @@ export default function OpeningsPage() {
     const [currentFen, setCurrentFen] = useState("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     const [moveIndex, setMoveIndex] = useState(0);
 
+    // Load opening into explorer - defined early so useEffects can use it
+    const loadOpening = useCallback((opening: Opening) => {
+        setSelectedOpening(opening);
+
+        const newChess = new Chess();
+        for (let i = 0; i < opening.moves.length; i++) {
+            try {
+                newChess.move(opening.moves[i]);
+            } catch {
+                break;
+            }
+        }
+
+        setChess(newChess);
+        setCurrentFen(newChess.fen());
+        setMoveIndex(opening.moves.length);
+    }, []);
+
     // Fetch categories on mount
     useEffect(() => {
         const fetchCategories = async () => {
@@ -70,7 +88,12 @@ export default function OpeningsPage() {
                 const response = await fetch("/api/py/api/openings/categories");
                 if (response.ok) {
                     const data = await response.json();
-                    setCategories(data.categories || []);
+                    const cats = data.categories || [];
+                    setCategories(cats);
+                    // Auto-select first category to show openings immediately
+                    if (cats.length > 0 && !selectedCategory) {
+                        setSelectedCategory(cats[0].code);
+                    }
                 }
             } catch (error) {
                 console.error("Failed to fetch categories:", error);
@@ -91,7 +114,12 @@ export default function OpeningsPage() {
                 const response = await fetch(`/api/py/api/openings/?eco=${selectedCategory}&limit=100`);
                 if (response.ok) {
                     const data = await response.json();
-                    setOpenings(data.openings || []);
+                    const openingsList = data.openings || [];
+                    setOpenings(openingsList);
+                    // Auto-load first opening so board isn't empty
+                    if (openingsList.length > 0 && !selectedOpening) {
+                        loadOpening(openingsList[0]);
+                    }
                 }
             } catch (error) {
                 console.error("Failed to fetch openings:", error);
@@ -100,7 +128,7 @@ export default function OpeningsPage() {
             }
         };
         fetchOpenings();
-    }, [selectedCategory]);
+    }, [selectedCategory, loadOpening]);
 
     // Search openings
     useEffect(() => {
@@ -122,23 +150,7 @@ export default function OpeningsPage() {
         return () => clearTimeout(debounce);
     }, [searchQuery]);
 
-    // Load opening into explorer
-    const loadOpening = useCallback((opening: Opening) => {
-        setSelectedOpening(opening);
 
-        const newChess = new Chess();
-        for (let i = 0; i < opening.moves.length; i++) {
-            try {
-                newChess.move(opening.moves[i]);
-            } catch {
-                break;
-            }
-        }
-
-        setChess(newChess);
-        setCurrentFen(newChess.fen());
-        setMoveIndex(opening.moves.length);
-    }, []);
 
     // Step through moves in explorer
     const stepMove = useCallback((direction: "forward" | "back") => {
@@ -250,8 +262,8 @@ export default function OpeningsPage() {
                         <button
                             onClick={() => setMode("explore")}
                             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${mode === "explore"
-                                    ? "bg-primary text-primary-foreground"
-                                    : "hover:bg-secondary/80"
+                                ? "bg-primary text-primary-foreground"
+                                : "hover:bg-secondary/80"
                                 }`}
                         >
                             <span className="flex items-center gap-2">
@@ -262,8 +274,8 @@ export default function OpeningsPage() {
                         <button
                             onClick={() => startQuiz()}
                             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${mode === "quiz"
-                                    ? "bg-primary text-primary-foreground"
-                                    : "hover:bg-secondary/80"
+                                ? "bg-primary text-primary-foreground"
+                                : "hover:bg-secondary/80"
                                 }`}
                         >
                             <span className="flex items-center gap-2">
@@ -315,8 +327,8 @@ export default function OpeningsPage() {
                                             key={cat.code}
                                             onClick={() => setSelectedCategory(cat.code)}
                                             className={`w-full flex items-center justify-between p-3 rounded-xl transition-colors ${selectedCategory === cat.code
-                                                    ? "bg-primary/10 border border-primary/30"
-                                                    : "hover:bg-secondary"
+                                                ? "bg-primary/10 border border-primary/30"
+                                                : "hover:bg-secondary"
                                                 }`}
                                         >
                                             <div className="text-left">
@@ -341,8 +353,8 @@ export default function OpeningsPage() {
                                                 key={`${opening.eco}-${opening.name}`}
                                                 onClick={() => loadOpening(opening)}
                                                 className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${selectedOpening?.name === opening.name
-                                                        ? "bg-primary/10"
-                                                        : "hover:bg-secondary"
+                                                    ? "bg-primary/10"
+                                                    : "hover:bg-secondary"
                                                     }`}
                                             >
                                                 <span className="text-xs font-mono bg-secondary px-2 py-0.5 rounded">
@@ -422,8 +434,8 @@ export default function OpeningsPage() {
                                                     <span
                                                         key={i}
                                                         className={`px-2 py-1 rounded text-sm ${i < moveIndex
-                                                                ? "bg-primary/20 text-primary"
-                                                                : "bg-secondary"
+                                                            ? "bg-primary/20 text-primary"
+                                                            : "bg-secondary"
                                                             }`}
                                                     >
                                                         {i % 2 === 0 && <span className="text-muted-foreground">{Math.floor(i / 2) + 1}.</span>}
@@ -572,10 +584,10 @@ export default function OpeningsPage() {
                                                 <span
                                                     key={i}
                                                     className={`px-2 py-1 rounded text-sm ${i < quizMoveIndex
-                                                            ? "bg-emerald-500/20 text-emerald-500"
-                                                            : i === quizMoveIndex
-                                                                ? "bg-primary/20 text-primary ring-2 ring-primary"
-                                                                : "bg-secondary text-muted-foreground"
+                                                        ? "bg-emerald-500/20 text-emerald-500"
+                                                        : i === quizMoveIndex
+                                                            ? "bg-primary/20 text-primary ring-2 ring-primary"
+                                                            : "bg-secondary text-muted-foreground"
                                                         }`}
                                                 >
                                                     {i % 2 === 0 && `${Math.floor(i / 2) + 1}.`}{move}
