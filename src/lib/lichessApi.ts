@@ -11,13 +11,13 @@ export interface LichessMoveStats {
 
 export interface LichessExplorerResponse {
     white: number;
-    draw: number;
+    draws: number;
     black: number;
     moves: Array<{
         uci: string;
         san: string;
         white: number;
-        draw: number;
+        draws: number;
         black: number;
         averageRating: number;
     }>;

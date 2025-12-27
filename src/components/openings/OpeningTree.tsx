@@ -112,13 +112,13 @@ export function OpeningTree({ moves, onMoveSelect }: OpeningTreeProps) {
     }, [moves, onMoveSelect]);
 
     const moveNodes: MoveNode[] = stats?.moves.map(m => {
-        const total = m.white + m.draw + m.black;
+        const total = m.white + m.draws + m.black;
         return {
             san: m.san,
             uci: m.uci,
             count: total,
             winRate: Math.round((m.white / total) * 100),
-            drawRate: Math.round((m.draw / total) * 100),
+            drawRate: Math.round((m.draws / total) * 100),
             blackWinRate: Math.round((m.black / total) * 100),
             averageRating: m.averageRating
         };
@@ -131,7 +131,7 @@ export function OpeningTree({ moves, onMoveSelect }: OpeningTreeProps) {
                 <Database className="w-4 h-4 text-primary" />
                 <h3 className="font-semibold">Lichess Database</h3>
                 <span className="text-xs text-muted-foreground ml-auto">
-                    {stats ? `${(stats.white + stats.draw + stats.black).toLocaleString()} games` : "Loading..."}
+                    {stats ? `${(stats.white + stats.draws + stats.black).toLocaleString()} games` : "Loading..."}
                 </span>
             </div>
 
