@@ -1,15 +1,8 @@
 "use client";
 
-import React, { useMemo, useContext } from "react";
+import React, { useMemo } from "react";
 import { Chessboard as ReactChessboard } from "react-chessboard";
 import { PIECE_COMPONENTS } from "./ChessPieces";
-
-// We need to import the context, but careful about circular dependencies if Context imports BOARD_THEMES from here.
-// Actually Context does import BOARD_THEMES from here.
-// Simplest way is to dynamically require or just duplicate the hook usage if safe?
-// No, circular dep is fine in Typescript usually as long as runtime is ok.
-// But `useBoardTheme` imports Context which imports types...
-// Let's just import the hook.
 import { useBoardTheme } from "@/context/BoardThemeContext";
 
 // Board Themes (Hex codes for react-chessboard)
@@ -28,16 +21,13 @@ interface ChessBoardProps {
     orientation?: "white" | "black";
     bestMove?: { from: string; to: string };
     blunderMove?: { from: string; to: string };
-    hintMove?: { from: string; to: string }; // Hint highlighting (amber)
+    hintMove?: { from: string; to: string };
     interactable?: boolean;
     theme?: BoardTheme;
     id?: string;
 }
 
-// Export directly without memo to ensure position updates always trigger re-render
-export const ChessBoard = ChessBoardComponent;
-
-function ChessBoardComponent({
+export function ChessBoard({
     position,
     onMove,
     orientation = "white",
@@ -46,17 +36,9 @@ function ChessBoardComponent({
     hintMove,
     interactable = true,
     theme: propTheme,
-    id = "BasicBoard", // Default ID
+    id = "BasicBoard",
 }: ChessBoardProps) {
-    // DEBUG: Always log position
-    // console.log(`[ChessBoard] id=${id} position=${position?.substring(0, 30)}...`);
-
-    // Attempt to use context, fallback to prop, fallback to 'green'
-    // But wait, hooks must be unconditional.
-    // If context is missing (isolated test?), it might throw if useBoardTheme throws.
-    // My useBoardTheme throws.
-    // Ideally we assume ChessBoard is always wrapped.
-
+    // Get theme from context
     let contextTheme: BoardTheme = "green";
     let boardSize = 1.0;
 
@@ -65,7 +47,7 @@ function ChessBoardComponent({
         contextTheme = ctx.theme;
         boardSize = ctx.boardSize;
     } catch (e) {
-        // Context not found (e.g. strict unit test), ignore
+        // Context not found, use defaults
     }
 
     const currentThemeName = propTheme || contextTheme;
@@ -94,57 +76,58 @@ function ChessBoardComponent({
     const customSquareStyles = useMemo(() => {
         const styles: Record<string, React.CSSProperties> = {};
 
-        // Hint Move (Amber/Gold - subtle guide)
         if (hintMove) {
             styles[hintMove.from] = {
-                backgroundColor: 'rgba(251, 191, 36, 0.5)', // amber-400
+                backgroundColor: 'rgba(251, 191, 36, 0.5)',
                 boxShadow: 'inset 0 0 8px rgba(251, 191, 36, 0.8)'
             };
             styles[hintMove.to] = {
-                backgroundColor: 'rgba(245, 158, 11, 0.5)', // amber-500
+                backgroundColor: 'rgba(245, 158, 11, 0.5)',
                 boxShadow: 'inset 0 0 8px rgba(245, 158, 11, 0.8)'
             };
         }
 
-        // Best Move (Emerald)
         if (bestMove) {
-            styles[bestMove.from] = { backgroundColor: 'rgba(52, 211, 153, 0.5)' }; // emerald-400
+            styles[bestMove.from] = { backgroundColor: 'rgba(52, 211, 153, 0.5)' };
             styles[bestMove.to] = { backgroundColor: 'rgba(52, 211, 153, 0.5)' };
         }
 
-        // Blunder (Red)
         if (blunderMove) {
-            styles[blunderMove.from] = { backgroundColor: 'rgba(248, 113, 113, 0.6)' }; // red-400
-            styles[blunderMove.to] = { backgroundColor: 'rgba(220, 38, 38, 0.6)' }; // red-600
+            styles[blunderMove.from] = { backgroundColor: 'rgba(248, 113, 113, 0.6)' };
+            styles[blunderMove.to] = { backgroundColor: 'rgba(220, 38, 38, 0.6)' };
         }
 
         return styles;
     }, [bestMove, blunderMove, hintMove]);
 
-    const ReactChessboardAny = ReactChessboard as any;
+    // Cast to any for v5 API compatibility
+    const ChessboardComponent = ReactChessboard as any;
+
+    // react-chessboard v5 requires ALL props inside an `options` object
+    const chessboardOptions = {
+        id,
+        position,
+        boardOrientation: orientation,
+        arePiecesDraggable: interactable,
+        darkSquareStyle: { backgroundColor: currentTheme.dark },
+        lightSquareStyle: { backgroundColor: currentTheme.light },
+        squareStyles: customSquareStyles,
+        pieces: customPieces,
+        animationDuration: 200,
+        onPieceDrop: (sourceSquare: string, targetSquare: string) => {
+            if (onMove && targetSquare) {
+                return onMove(sourceSquare, targetSquare);
+            }
+            return false;
+        },
+    };
 
     return (
         <div
             className="w-full mx-auto select-none border-4 border-[#4d4d4d] rounded-lg shadow-2xl overflow-hidden bg-[#262421]"
             style={{ maxWidth: `${600 * boardSize}px` }}
         >
-            <ReactChessboardAny
-                id={id}
-                position={position}
-                boardOrientation={orientation}
-                arePiecesDraggable={interactable}
-                darkSquareStyle={{ backgroundColor: currentTheme.dark }}
-                lightSquareStyle={{ backgroundColor: currentTheme.light }}
-                squareStyles={customSquareStyles}
-                pieces={customPieces}
-                animationDuration={200}
-                onPieceDrop={(sourceSquare: string, targetSquare: string) => {
-                    if (onMove && targetSquare) {
-                        return onMove(sourceSquare, targetSquare);
-                    }
-                    return false;
-                }}
-            />
+            <ChessboardComponent options={chessboardOptions} />
         </div>
     );
 }
