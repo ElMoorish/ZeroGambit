@@ -31,9 +31,9 @@ export function Snowfall({ intensity = "light" }: { intensity?: "light" | "mediu
             const scrollY = window.scrollY;
             const viewportHeight = window.innerHeight;
 
-            // Blizzard zone: roughly 1-3 viewport heights down (LocalFirstExplainer area)
+            // Blizzard zone: from LocalFirstExplainer to just before HeroConverter
             const blizzardStart = viewportHeight * 0.8;
-            const blizzardEnd = viewportHeight * 3;
+            const blizzardEnd = viewportHeight * 5; // Extended to reach From Data to Drama
 
             if (scrollY >= blizzardStart && scrollY <= blizzardEnd) {
                 setCurrentIntensity("heavy");
