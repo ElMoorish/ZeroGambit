@@ -1,4 +1,5 @@
 "use client";
+// Build: Christmas Update v1.2 - Snow + Banner
 
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import NeuralHero from "@/components/landing/NeuralHero";
