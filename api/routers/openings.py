@@ -17,6 +17,10 @@ class OpeningResponse(BaseModel):
     fen: str
     description: str
     numMoves: int
+    # Teaching content
+    keyIdeas: Optional[List[str]] = None
+    typicalPlans: Optional[List[str]] = None
+    commonTraps: Optional[List[str]] = None
 
 
 class OpeningListResponse(BaseModel):

@@ -1,0 +1,463 @@
+{
+    "openings": [
+        {
+            "eco": "A00",
+            "name": "Uncommon Opening",
+            "moves": [
+                "g4"
+            ],
+            "description": "The Grob Attack - an aggressive but risky flank opening.",
+            "keyIdeas": [
+                "Surprise value",
+                "Early g-file attack",
+                "Avoid theoretical lines"
+            ],
+            "typicalPlans": [
+                "Fianchetto bishop to g2",
+                "Control h5 square",
+                "Queenside castling"
+            ],
+            "commonTraps": [
+                "d5 punishes lack of center control",
+                "e5 gains space quickly"
+            ]
+        },
+        {
+            "eco": "A00",
+            "name": "Polish Opening",
+            "moves": [
+                "b4"
+            ],
+            "description": "The Sokolsky Opening - controls a5 and prepares Bb2.",
+            "keyIdeas": [
+                "Control a5 and c5",
+                "Fianchetto queen's bishop",
+                "Unusual structure"
+            ],
+            "typicalPlans": [
+                "Bb2 pressure on long diagonal",
+                "d3 and Nd2 setup",
+                "Kingside fianchetto possible"
+            ],
+            "commonTraps": [
+                "e5 with d6 creates solid center"
+            ]
+        },
+        {
+            "eco": "A01",
+            "name": "Nimzo-Larsen Attack",
+            "moves": [
+                "b3"
+            ],
+            "description": "Fianchettoes the queen's bishop for long diagonal control.",
+            "keyIdeas": [
+                "Long diagonal pressure",
+                "Flexible pawn structure",
+                "Avoid main lines"
+            ],
+            "typicalPlans": [
+                "Bb2 aiming at g7",
+                "e3 and d4 break",
+                "Nf3-d2-c4 maneuver"
+            ],
+            "commonTraps": [
+                "d5/e5 center grab",
+                "Bg7 mirrors the idea"
+            ]
+        },
+        {
+            "eco": "A02",
+            "name": "Bird's Opening",
+            "moves": [
+                "f4"
+            ],
+            "description": "Controls e5 and prepares kingside expansion.",
+            "keyIdeas": [
+                "Control e5 square",
+                "Kingside initiative",
+                "Dutch-like structures"
+            ],
+            "typicalPlans": [
+                "Nf3, e3, Be2, O-O",
+                "g4-g5 kingside storm",
+                "d3 and Nc3 setup"
+            ],
+            "commonTraps": [
+                "From's Gambit 1...e5!?",
+                "d5 gains space"
+            ]
+        },
+        {
+            "eco": "A04",
+            "name": "Réti Opening",
+            "moves": [
+                "Nf3"
+            ],
+            "description": "A flexible hypermodern opening that delays central pawn moves.",
+            "keyIdeas": [
+                "Hypermodern control",
+                "Flexibility in structure",
+                "Transpose to many systems"
+            ],
+            "typicalPlans": [
+                "g3, Bg2 fianchetto",
+                "c4 English-like",
+                "d3-e4 or d4 breaks"
+            ],
+            "commonTraps": [
+                "d5 is the natural response",
+                "Be careful of early e5"
+            ]
+        },
+        {
+            "eco": "A10",
+            "name": "English Opening",
+            "moves": [
+                "c4"
+            ],
+            "description": "The English - a flexible opening that can transpose to many systems.",
+            "keyIdeas": [
+                "Control d5 square",
+                "Flexibility and transpositions",
+                "Fianchetto kingside"
+            ],
+            "typicalPlans": [
+                "Nc3, g3, Bg2 setup",
+                "d4 central break",
+                "e4 or d3 pawn structures"
+            ],
+            "commonTraps": [
+                "e5 symmetrical play",
+                "Nf6 Indian setups"
+            ]
+        },
+        {
+            "eco": "A45",
+            "name": "Trompowsky Attack",
+            "moves": [
+                "d4",
+                "Nf6",
+                "Bg5"
+            ],
+            "description": "Pins the knight and disrupts normal development.",
+            "keyIdeas": [
+                "Disrupt knight development",
+                "Avoid theory-heavy lines",
+                "Quick development"
+            ],
+            "typicalPlans": [
+                "Bxf6 double pawns",
+                "e3, Bd3, Nf3 solid",
+                "c4 and Nc3 expansion"
+            ],
+            "commonTraps": [
+                "Ne4 trapping concerns",
+                "c5 counter in center"
+            ]
+        },
+        {
+            "eco": "A48",
+            "name": "London System",
+            "moves": [
+                "d4",
+                "Nf6",
+                "Nf3",
+                "g6",
+                "Bf4"
+            ],
+            "description": "Very solid system suitable for all levels.",
+            "keyIdeas": [
+                "Solid pawn structure",
+                "Easy development",
+                "Bishop pair ideas"
+            ],
+            "typicalPlans": [
+                "e3, Bd3, O-O pyramid",
+                "h3 preventing Nh5",
+                "c4 or c3 and Qb3"
+            ],
+            "commonTraps": [
+                "Nh5 attacking Bf4",
+                "c5 quick counter"
+            ]
+        },
+        {
+            "eco": "B01",
+            "name": "Scandinavian Defense",
+            "moves": [
+                "e4",
+                "d5"
+            ],
+            "description": "Immediately challenges White's center pawn.",
+            "keyIdeas": [
+                "Immediate central challenge",
+                "Avoid Sicilian theory",
+                "Active queen early"
+            ],
+            "typicalPlans": [
+                "Qd6 or Qa5 retreats",
+                "Nf6, Bg4 development",
+                "c6 and e6 solid structure"
+            ],
+            "commonTraps": [
+                "Qa5 walk into Bd2",
+                "Qd8 loses tempo"
+            ]
+        },
+        {
+            "eco": "B10",
+            "name": "Caro-Kann Defense",
+            "moves": [
+                "e4",
+                "c6"
+            ],
+            "description": "Solid defense preparing d5 with pawn support.",
+            "keyIdeas": [
+                "Solid pawn structure",
+                "Good light-squared bishop",
+                "Avoid isolated pawns"
+            ],
+            "typicalPlans": [
+                "d5 challenge center",
+                "Bf5 before e6",
+                "Nd7-f6 development"
+            ],
+            "commonTraps": [
+                "e5 advance traps bishop",
+                "Exchange gives minorities"
+            ]
+        },
+        {
+            "eco": "B20",
+            "name": "Sicilian Defense",
+            "moves": [
+                "e4",
+                "c5"
+            ],
+            "description": "The most popular and dynamic response to 1.e4.",
+            "keyIdeas": [
+                "Asymmetrical position",
+                "Counterplay on c-file",
+                "Active piece play"
+            ],
+            "typicalPlans": [
+                "d6 and Nf6 development",
+                "Nc6 or a6 first",
+                "Qc7 and O-O-O possible"
+            ],
+            "commonTraps": [
+                "Open Sicilian is sharp",
+                "Early d5 break critical"
+            ]
+        },
+        {
+            "eco": "B90",
+            "name": "Sicilian Defense: Najdorf Variation",
+            "moves": [
+                "e4",
+                "c5",
+                "Nf3",
+                "d6",
+                "d4",
+                "cxd4",
+                "Nxd4",
+                "Nf6",
+                "Nc3",
+                "a6"
+            ],
+            "description": "The most popular Sicilian - incredibly sharp.",
+            "keyIdeas": [
+                "Flexible with e5/e6",
+                "b5 expansion",
+                "Control e4 and d5"
+            ],
+            "typicalPlans": [
+                "e5 pawn break",
+                "b5-b4 queenside attack",
+                "Bg7 or Be7 depending on line"
+            ],
+            "commonTraps": [
+                "English Attack with Be3",
+                "6.Bg5 Poisoned Pawn"
+            ]
+        },
+        {
+            "eco": "C42",
+            "name": "Petrov's Defense",
+            "moves": [
+                "e4",
+                "e5",
+                "Nf3",
+                "Nf6"
+            ],
+            "description": "Solid counterattacking defense at high levels.",
+            "keyIdeas": [
+                "Symmetrical and solid",
+                "Avoid gambits",
+                "Drawish tendencies"
+            ],
+            "typicalPlans": [
+                "d6 protecting e5",
+                "Nxe4 main line",
+                "Be7 and O-O safe"
+            ],
+            "commonTraps": [
+                "Nxe4 requires precision",
+                "Qe2 tricks exist"
+            ]
+        },
+        {
+            "eco": "C50",
+            "name": "Italian Game",
+            "moves": [
+                "e4",
+                "e5",
+                "Nf3",
+                "Nc6",
+                "Bc4"
+            ],
+            "description": "Classical development targeting f7.",
+            "keyIdeas": [
+                "Target f7 weakness",
+                "Natural development",
+                "Control d5 with pieces"
+            ],
+            "typicalPlans": [
+                "c3 and d4 break",
+                "O-O and Re1",
+                "Ng5 attacks on f7"
+            ],
+            "commonTraps": [
+                "Bc5 equalizes well",
+                "Two Knights is sharper"
+            ]
+        },
+        {
+            "eco": "C60",
+            "name": "Ruy Lopez",
+            "moves": [
+                "e4",
+                "e5",
+                "Nf3",
+                "Nc6",
+                "Bb5"
+            ],
+            "description": "The Spanish Game - most played opening at top level.",
+            "keyIdeas": [
+                "Pressure on e5 pawn",
+                "Long-term positional",
+                "Superior pawn structure"
+            ],
+            "typicalPlans": [
+                "a6 Ba4 b5 Bb3 retreat",
+                "d4 central break",
+                "Re1 and h3 maneuvers"
+            ],
+            "commonTraps": [
+                "Berlin is very drawish",
+                "Marshall gambit is sharp"
+            ]
+        },
+        {
+            "eco": "D06",
+            "name": "Queen's Gambit",
+            "moves": [
+                "d4",
+                "d5",
+                "c4"
+            ],
+            "description": "The Queen's Gambit - offers a pawn for central control.",
+            "keyIdeas": [
+                "Central control",
+                "Piece activity",
+                "Minority attack"
+            ],
+            "typicalPlans": [
+                "cxd5 exchange",
+                "e3 and Bd3 setup",
+                "Nc3 and Nf3 development"
+            ],
+            "commonTraps": [
+                "dxc4 is playable",
+                "e6 is solid"
+            ]
+        },
+        {
+            "eco": "D30",
+            "name": "Queen's Gambit Declined",
+            "moves": [
+                "d4",
+                "d5",
+                "c4",
+                "e6"
+            ],
+            "description": "Classical solid defense.",
+            "keyIdeas": [
+                "Solid pawn chain",
+                "Develop before capturing",
+                "Break with c5 or e5"
+            ],
+            "typicalPlans": [
+                "Nf6, Be7, O-O setup",
+                "b6 and Bb7 fianchetto",
+                "Nbd7-f6 maneuvering"
+            ],
+            "commonTraps": [
+                "cxd5 exchange gives space",
+                "Bf4 active bishop"
+            ]
+        },
+        {
+            "eco": "E20",
+            "name": "Nimzo-Indian Defense",
+            "moves": [
+                "d4",
+                "Nf6",
+                "c4",
+                "e6",
+                "Nc3",
+                "Bb4"
+            ],
+            "description": "Pins the knight and controls e4.",
+            "keyIdeas": [
+                "Pin on c3 knight",
+                "Control e4 square",
+                "Flexible structure"
+            ],
+            "typicalPlans": [
+                "O-O and d5 or d6",
+                "Bxc3 double pawns",
+                "b6 and Ba6 ideas"
+            ],
+            "commonTraps": [
+                "Qc2 avoids doubled pawns",
+                "a3 must be met correctly"
+            ]
+        },
+        {
+            "eco": "E60",
+            "name": "King's Indian Defense",
+            "moves": [
+                "d4",
+                "Nf6",
+                "c4",
+                "g6"
+            ],
+            "description": "Fianchetto allowing White a big center.",
+            "keyIdeas": [
+                "Counterattack White's center",
+                "Kingside attack",
+                "Dynamic piece play"
+            ],
+            "typicalPlans": [
+                "d6, Bg7, O-O setup",
+                "e5 pawn break",
+                "f5-f4 kingside storm"
+            ],
+            "commonTraps": [
+                "e5 timing is critical",
+                "Bg4 pins can help"
+            ]
+        }
+    ]
+}
