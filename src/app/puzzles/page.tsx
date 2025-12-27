@@ -559,7 +559,11 @@ function PuzzlesPageContent() {
         );
     }, [currentPuzzle, chess, moveIndex, playerColor, fetchCoaching]);
 
-    const phaseInfo = PHASE_INFO[phase];
+    // Use the current puzzle's phase for display (if available), otherwise use the selected phase
+    const displayPhase = currentPuzzle?.phase && PHASE_INFO[currentPuzzle.phase as Phase]
+        ? currentPuzzle.phase as Phase
+        : phase;
+    const phaseInfo = PHASE_INFO[displayPhase];
     const PhaseIcon = phaseInfo.icon;
 
     return (

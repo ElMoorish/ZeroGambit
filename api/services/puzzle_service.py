@@ -11,6 +11,31 @@ import chess
 import os
 from ..database import get_puzzles_collection
 
+
+# Theme to phase mapping for inferring puzzle phase from themes
+OPENING_THEMES = {'opening', 'gambit', 'siciliandefense', 'italianopening', 'spanishopening', 
+                  'frenchdefense', 'carokann', 'queensgambit', 'ruylopez', 'londonSystem',
+                  'kingsgambit', 'scotchGame', 'viennaGame'}
+ENDGAME_THEMES = {'endgame', 'rookendgame', 'pawnendgame', 'bishopendgame', 'knightendgame',
+                  'queenendgame', 'queenrookendgame', 'basicendgame', 'rookvsbishop', 
+                  'rookvsknight', 'bishopvsknight', 'oppositebishops'}
+
+
+def infer_phase_from_themes(themes: List[str]) -> str:
+    """Infer puzzle phase from its themes"""
+    themes_lower = {t.lower() for t in themes}
+    
+    # Check for explicit opening themes
+    if themes_lower & OPENING_THEMES:
+        return "opening"
+    
+    # Check for explicit endgame themes
+    if themes_lower & ENDGAME_THEMES:
+        return "endgame"
+    
+    # Default to middlegame
+    return "middlegame"
+
 # Try to import DynamoDB service
 try:
     from .dynamodb_service import get_dynamodb_puzzle_service, DynamoDBPuzzleService
@@ -384,13 +409,18 @@ class PuzzleService:
                          if not any(t.lower() in [pt.lower() for pt in puzzle_themes_list] for t in themes):
                              continue
                     
+                    # Infer phase from themes if not set in DynamoDB
+                    puzzle_phase = p.get("phase")
+                    if not puzzle_phase:
+                        puzzle_phase = infer_phase_from_themes(puzzle_themes_list)
+                    
                     puzzles.append(Puzzle(
                         id=p.get("puzzle_id", p.get("id", "unknown")),
                         fen=p.get("fen", ""),
                         moves=p.get("moves", []),
                         rating=p.get("rating", 1200),
                         themes=puzzle_themes_list,
-                        phase=p.get("phase", "middlegame")
+                        phase=puzzle_phase
                     ))
                 
                 # If we got enough, return
