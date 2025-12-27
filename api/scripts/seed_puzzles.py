@@ -15,11 +15,13 @@ import sys
 import time
 
 # Batch size for inserts (higher = faster but more memory)
-BATCH_SIZE = 1000
+# Limit for number of puzzles to seed (to save space/time)
+# 25,000 is plenty for a personal server (approx 5-10MB)
+PUZZLE_LIMIT = 25000
 
-# Theme keywords to classify puzzles by phase
+# STRICT MAPPING (Matches puzzle_service.py)
 PHASE_KEYWORDS = {
-    "opening": ["opening", "hangingPiece", "attackingF2F7"],
+    "opening": ["opening", "attackingF2F7"],
     "middlegame": ["middlegame", "fork", "pin", "skewer", "discoveredAttack", "sacrifice",
                    "attraction", "deflection", "doubleCheck", "interference", "xRayAttack",
                    "zugzwang", "trappedPiece", "overloading", "quietMove", "clearance",
@@ -31,21 +33,31 @@ PHASE_KEYWORDS = {
 
 
 def determine_phase(themes) -> str:
-    """Determine game phase from puzzle themes (list or string)"""
+    """Determine game phase from puzzle themes with strict priority"""
     if isinstance(themes, list):
-        themes_list = [t.lower() for t in themes if isinstance(t, str)]
+        themes_list = {t.lower() for t in themes if isinstance(t, str)}
     elif isinstance(themes, str):
-        themes_list = themes.lower().split()
+        themes_list = {t.lower() for t in themes.split()}
     else:
-        themes_list = []
+        themes_list = set()
     
-    for keyword in PHASE_KEYWORDS["endgame"]:
-        if keyword.lower() in themes_list:
-            return "endgame"
+    # 1. Explicit Phase Tags
+    if "endgame" in themes_list: return "endgame"
+    if "opening" in themes_list: return "opening"
+    if "middlegame" in themes_list: return "middlegame"
+
+    # 2. Key Theme Inference
+    for t in themes_list:
+        if "opening" in t or "defense" in t or "gambit" in t or "game" in t:
+             if any(k in t for k in ["indian", "caro", "french", "sicilian", "slav", "scandi", "scotch", "vienna"]):
+                 return "opening"
+
+    if any("endgame" in t for t in themes_list): return "endgame"
     
-    for keyword in PHASE_KEYWORDS["opening"]:
-        if keyword.lower() in themes_list:
-            return "opening"
+    # 3. Fallback
+    for phase, keywords in PHASE_KEYWORDS.items():
+        if any(k.lower() in themes_list for k in keywords):
+            return phase
     
     return "middlegame"
 
@@ -82,7 +94,7 @@ async def insert_batch(collection, batch: List[dict]):
 
 
 async def seed_puzzles():
-    """Seed ALL puzzles from HuggingFace dataset"""
+    """Seed puzzles from HuggingFace dataset"""
     
     print("📦 Loading required packages...")
     try:
@@ -94,8 +106,7 @@ async def seed_puzzles():
         from datasets import load_dataset
     
     print("\n🔄 Loading Lichess puzzle dataset from HuggingFace...")
-    print("   Dataset: 5,600,086 puzzles")
-    print("   This will take 30-60 minutes to complete.\n")
+    print(f"   Limit: {PUZZLE_LIMIT:,} puzzles")
     
     # Load the dataset (streaming mode)
     dataset = load_dataset("Lichess/chess-puzzles", split="train", streaming=True)
@@ -189,6 +200,10 @@ async def seed_puzzles():
                       f"Middlegame: {phase_counts['middlegame']:,} | "
                       f"Endgame: {phase_counts['endgame']:,}")
                 last_update = current_time
+        
+        if total_processed >= PUZZLE_LIMIT:
+            print(f"\nReached limit of {PUZZLE_LIMIT:,} puzzles. Stopping.")
+            break
     
     # Insert remaining batch
     if batch:
