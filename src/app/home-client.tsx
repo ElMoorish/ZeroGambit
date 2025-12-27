@@ -22,7 +22,7 @@ export default function HomePage() {
     <main className="flex-1 bg-[#1a1d21] min-h-screen">
 
       {/* Snowfall Effect (both states) */}
-      <Snowfall intensity="light" />
+      <Snowfall />
 
       {/* Sound Toggle (both states) */}
       <SonicToggle />
