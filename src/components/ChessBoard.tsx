@@ -2,7 +2,6 @@
 
 import React, { useMemo } from "react";
 import { Chessboard as ReactChessboard } from "react-chessboard";
-import { PIECE_COMPONENTS } from "./ChessPieces";
 import { useBoardTheme } from "@/context/BoardThemeContext";
 
 // Board Themes (Hex codes for react-chessboard)
@@ -53,26 +52,7 @@ export function ChessBoard({
     const currentThemeName = propTheme || contextTheme;
     const currentTheme = BOARD_THEMES[currentThemeName] || BOARD_THEMES.green;
 
-    // Custom Pieces Logic
-    const customPieces = useMemo(() => {
-        const pieces: Record<string, any> = {};
-        const pieceMap = {
-            'wP': 'P', 'wN': 'N', 'wB': 'B', 'wR': 'R', 'wQ': 'Q', 'wK': 'K',
-            'bP': 'p', 'bN': 'n', 'bB': 'b', 'bR': 'r', 'bQ': 'q', 'bK': 'k'
-        };
-
-        Object.entries(pieceMap).forEach(([key, char]) => {
-            const Component = PIECE_COMPONENTS[char];
-            pieces[key] = ({ squareWidth }: { squareWidth: number }) => (
-                <div style={{ width: squareWidth, height: squareWidth, padding: '10%' }}>
-                    <Component className="w-full h-full drop-shadow-md" />
-                </div>
-            );
-        });
-        return pieces;
-    }, []);
-
-    // Custom Square Styles (Highlights)
+    // Custom Square Styles (Highlights for best moves, blunders, hints)
     const customSquareStyles = useMemo(() => {
         const styles: Record<string, React.CSSProperties> = {};
 
@@ -104,6 +84,7 @@ export function ChessBoard({
     const ChessboardComponent = ReactChessboard as any;
 
     // react-chessboard v5 requires ALL props inside an `options` object
+    // Removed custom pieces to use default Lichess-style pieces
     const chessboardOptions = {
         id,
         position,
@@ -112,7 +93,6 @@ export function ChessBoard({
         darkSquareStyle: { backgroundColor: currentTheme.dark },
         lightSquareStyle: { backgroundColor: currentTheme.light },
         squareStyles: customSquareStyles,
-        pieces: customPieces,
         animationDuration: 200,
         // v5 API: onPieceDrop receives an event object
         onPieceDrop: (event: { sourceSquare: string; targetSquare: string; piece?: any }) => {
