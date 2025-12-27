@@ -114,9 +114,10 @@ export function ChessBoard({
         squareStyles: customSquareStyles,
         pieces: customPieces,
         animationDuration: 200,
-        onPieceDrop: (sourceSquare: string, targetSquare: string) => {
-            if (onMove && targetSquare) {
-                return onMove(sourceSquare, targetSquare);
+        // v5 API: onPieceDrop receives an event object
+        onPieceDrop: (event: { sourceSquare: string; targetSquare: string; piece?: any }) => {
+            if (onMove && event.targetSquare) {
+                return onMove(event.sourceSquare, event.targetSquare);
             }
             return false;
         },
