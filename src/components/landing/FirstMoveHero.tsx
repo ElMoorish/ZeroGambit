@@ -35,13 +35,21 @@ interface FirstMoveHeroProps {
 
 export function FirstMoveHero({ onUnlock }: FirstMoveHeroProps) {
     const [puzzleIndex] = useState(() => Math.floor(Math.random() * HERO_PUZZLES.length));
-    const [chess] = useState(() => new Chess(HERO_PUZZLES[puzzleIndex].fen));
-    const [currentFen, setCurrentFen] = useState(HERO_PUZZLES[puzzleIndex].fen);
+    const puzzle = HERO_PUZZLES[puzzleIndex];
+
+    // Initialize chess on client-side only
+    const [chess] = useState(() => {
+        try {
+            return new Chess(puzzle.fen);
+        } catch (e) {
+            console.error("Chess init failed:", e);
+            return new Chess(); // Fallback to starting position
+        }
+    });
+    const [currentFen, setCurrentFen] = useState(puzzle.fen);
     const [status, setStatus] = useState<"waiting" | "correct" | "wrong">("waiting");
     const [showHint, setShowHint] = useState(false);
     const [attempts, setAttempts] = useState(0);
-
-    const puzzle = HERO_PUZZLES[puzzleIndex];
 
     // Show hint after 5 seconds
     useEffect(() => {
