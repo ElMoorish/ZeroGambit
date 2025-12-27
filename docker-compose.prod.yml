@@ -26,6 +26,7 @@ services:
       - .env
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/grandmaster_guard
+      - PYTHONUNBUFFERED=1
       - STOCKFISH_PATH=/usr/local/bin/stockfish
       # OLLAMA_URL=http://... (External API URL should be set here if using hybrid)
     volumes:
