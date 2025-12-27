@@ -123,26 +123,6 @@ function ChessBoardComponent({
 
     const ReactChessboardAny = ReactChessboard as any;
 
-    // Build options object for react-chessboard v5
-    const chessboardOptions = {
-        position,
-        boardOrientation: orientation,
-        arePiecesDraggable: interactable,
-        // v5 API: use darkSquareStyle, lightSquareStyle, squareStyles (NOT custom* prefixes)
-        darkSquareStyle: { backgroundColor: currentTheme.dark },
-        lightSquareStyle: { backgroundColor: currentTheme.light },
-        squareStyles: customSquareStyles,
-        customPieces: customPieces,
-        animationDuration: 200,
-        // v5 API: onPieceDrop receives an object, not positional args
-        onPieceDrop: ({ sourceSquare, targetSquare }: { sourceSquare: string; targetSquare: string | null }) => {
-            if (onMove && targetSquare) {
-                return onMove(sourceSquare, targetSquare);
-            }
-            return false;
-        },
-    };
-
     return (
         <div
             className="w-full mx-auto select-none border-4 border-[#4d4d4d] rounded-lg shadow-2xl overflow-hidden bg-[#262421]"
@@ -153,10 +133,10 @@ function ChessBoardComponent({
                 position={position}
                 boardOrientation={orientation}
                 arePiecesDraggable={interactable}
-                customDarkSquareStyle={{ backgroundColor: currentTheme.dark }}
-                customLightSquareStyle={{ backgroundColor: currentTheme.light }}
-                customSquareStyles={customSquareStyles}
-                customPieces={customPieces}
+                darkSquareStyle={{ backgroundColor: currentTheme.dark }}
+                lightSquareStyle={{ backgroundColor: currentTheme.light }}
+                squareStyles={customSquareStyles}
+                pieces={customPieces}
                 animationDuration={200}
                 onPieceDrop={(sourceSquare: string, targetSquare: string) => {
                     if (onMove && targetSquare) {
