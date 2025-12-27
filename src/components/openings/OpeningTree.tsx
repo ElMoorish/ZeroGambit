@@ -128,8 +128,17 @@ export function OpeningTree({ moves, onMoveSelect }: OpeningTreeProps) {
         <div className="bg-card rounded-xl border border-border flex flex-col h-[500px]">
             {/* Header */}
             <div className="flex items-center gap-2 p-4 border-b border-border bg-card/50 backdrop-blur-sm z-10 rounded-t-xl">
-                <Database className="w-4 h-4 text-primary" />
-                <h3 className="font-semibold">Lichess Database</h3>
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                        <Database className="w-4 h-4 text-primary" />
+                        <h3 className="font-semibold">Lichess Database</h3>
+                    </div>
+                    {stats?.opening && (
+                        <div className="text-xs text-primary font-medium mt-0.5">
+                            {stats.opening.eco} {stats.opening.name}
+                        </div>
+                    )}
+                </div>
                 <span className="text-xs text-muted-foreground ml-auto">
                     {stats ? `${(stats.white + stats.draws + stats.black).toLocaleString()} games` : "Loading..."}
                 </span>
@@ -175,6 +184,6 @@ export function OpeningTree({ moves, onMoveSelect }: OpeningTreeProps) {
                     <span>Black Wins</span>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

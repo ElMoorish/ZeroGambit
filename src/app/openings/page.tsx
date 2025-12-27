@@ -48,6 +48,7 @@ export default function OpeningsPage() {
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [openings, setOpenings] = useState<Opening[]>([]);
     const [selectedOpening, setSelectedOpening] = useState<Opening | null>(null);
+    const [treeMoves, setTreeMoves] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -300,6 +301,15 @@ export default function OpeningsPage() {
         startQuiz(randomOpening);
     }, [openings, startQuiz]);
 
+    // Sync treeMoves when selectedOpening changes
+    useEffect(() => {
+        if (selectedOpening) {
+            setTreeMoves(selectedOpening.moves);
+        } else {
+            setTreeMoves([]);
+        }
+    }, [selectedOpening]);
+
     return (
         <div className="min-h-screen bg-background">
             {/* Header */}
@@ -407,7 +417,7 @@ export default function OpeningsPage() {
                         {/* Right - Opening Tree */}
                         <div>
                             <OpeningTree
-                                moves={selectedOpening?.moves || []}
+                                moves={treeMoves}
                                 onMoveSelect={(path, index) => {
                                     // Update board position based on selected path
                                     const newChess = new Chess();
@@ -420,6 +430,7 @@ export default function OpeningsPage() {
                                     }
                                     setCurrentFen(newChess.fen());
                                     setChess(newChess);
+                                    setTreeMoves(path);
                                 }}
                             />
                         </div>
@@ -513,8 +524,8 @@ export default function OpeningsPage() {
                                                 <button
                                                     onClick={(e) => toggleLearned(e, selectedOpening)}
                                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${learnedEcob.has(selectedOpening.eco)
-                                                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                                                            : "bg-secondary hover:bg-secondary/80 border border-border"
+                                                        ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                                        : "bg-secondary hover:bg-secondary/80 border border-border"
                                                         }`}
                                                 >
                                                     <Check className="w-4 h-4" />
