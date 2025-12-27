@@ -23,6 +23,7 @@ import {
 import Link from "next/link";
 import { Chess } from "chess.js";
 import { ChessBoard } from "@/components/ChessBoard";
+import { OpeningTree } from "@/components/openings/OpeningTree";
 
 interface Opening {
     eco: string;
@@ -39,7 +40,7 @@ interface Category {
     count: number;
 }
 
-type Mode = "explore" | "quiz";
+type Mode = "explore" | "quiz" | "tree";
 
 export default function OpeningsPage() {
     const [mode, setMode] = useState<Mode>("explore");
@@ -283,6 +284,18 @@ export default function OpeningsPage() {
                                 Quiz
                             </span>
                         </button>
+                        <button
+                            onClick={() => setMode("tree")}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${mode === "tree"
+                                ? "bg-primary text-primary-foreground"
+                                : "hover:bg-secondary/80"
+                                }`}
+                        >
+                            <span className="flex items-center gap-2">
+                                <Sparkles className="w-4 h-4" />
+                                Tree
+                            </span>
+                        </button>
                     </div>
 
                     {/* Quiz Score */}
@@ -301,7 +314,60 @@ export default function OpeningsPage() {
             </header>
 
             <main className="container mx-auto px-4 py-6">
-                {mode === "explore" ? (
+                {mode === "tree" ? (
+                    /* TREE MODE */
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Left - Chess Board */}
+                        <div className="space-y-4">
+                            <div className="bg-card rounded-2xl border border-border p-4">
+                                <ChessBoard
+                                    position={currentFen}
+                                    onMove={() => false}
+                                />
+                            </div>
+
+                            {/* Current Position Info */}
+                            {selectedOpening && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-card rounded-2xl border border-border p-4"
+                                >
+                                    <h3 className="font-semibold text-lg mb-2">{selectedOpening.name}</h3>
+                                    <p className="text-sm text-muted-foreground">{selectedOpening.description}</p>
+                                    <div className="mt-3 flex items-center gap-2">
+                                        <span className="px-2 py-1 rounded bg-primary/10 text-primary text-xs font-medium">
+                                            {selectedOpening.eco}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                            {selectedOpening.numMoves} moves
+                                        </span>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </div>
+
+                        {/* Right - Opening Tree */}
+                        <div>
+                            <OpeningTree
+                                moves={selectedOpening?.moves || []}
+                                onMoveSelect={(path, index) => {
+                                    // Update board position based on selected path
+                                    const newChess = new Chess();
+                                    for (const move of path) {
+                                        try {
+                                            newChess.move(move);
+                                        } catch {
+                                            break;
+                                        }
+                                    }
+                                    setCurrentFen(newChess.fen());
+                                    setChess(newChess);
+                                }}
+                            />
+                        </div>
+                    </div>
+                ) : mode === "explore" ? (
                     /* EXPLORE MODE */
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Left Panel - Categories & Search */}
