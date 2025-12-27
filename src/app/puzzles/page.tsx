@@ -139,6 +139,42 @@ function PuzzlesPageContent() {
     const [libraryMode, setLibraryMode] = useState<LibraryMode | null>(null);
     const [showLibraryFilter, setShowLibraryFilter] = useState(false);
 
+    // Load seen puzzle IDs from localStorage on mount
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('seenPuzzleIds');
+            if (saved) {
+                const data = JSON.parse(saved);
+                // Check if data is recent (within 24 hours) - otherwise reset
+                const savedTime = data.timestamp || 0;
+                const now = Date.now();
+                if (now - savedTime < 24 * 60 * 60 * 1000) {
+                    setSeenPuzzleIds(new Set(data.ids || []));
+                    console.log(`Loaded ${data.ids?.length || 0} seen puzzle IDs from localStorage`);
+                } else {
+                    console.log('Seen puzzles expired, starting fresh');
+                    localStorage.removeItem('seenPuzzleIds');
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load seen puzzles:', e);
+        }
+    }, []);
+
+    // Save seen puzzle IDs to localStorage whenever they change
+    useEffect(() => {
+        if (seenPuzzleIds.size > 0) {
+            try {
+                localStorage.setItem('seenPuzzleIds', JSON.stringify({
+                    ids: Array.from(seenPuzzleIds),
+                    timestamp: Date.now()
+                }));
+            } catch (e) {
+                console.error('Failed to save seen puzzles:', e);
+            }
+        }
+    }, [seenPuzzleIds]);
+
     // Speak coaching message using browser TTS (only if voice enabled)
     const speakCoaching = useCallback((text: string) => {
         if (!voiceEnabled) return; // Skip TTS if voice disabled
@@ -381,17 +417,17 @@ function PuzzlesPageContent() {
                 if (curriculumMode) {
                     // Curriculum mode - fetch by rating range and themes
                     const themesStr = curriculumMode.themes.join(',');
-                    url = `/api/py/api/puzzles/curriculum?minRating=${curriculumMode.minRating}&maxRating=${curriculumMode.maxRating}&themes=${themesStr}&count=50`;
+                    url = `/api/py/api/puzzles/curriculum?minRating=${curriculumMode.minRating}&maxRating=${curriculumMode.maxRating}&themes=${themesStr}&count=200`;
                     console.log("Fetching curriculum puzzles from:", url);
                 } else if (libraryMode) {
                     // Library mode - fetch by source, rating, and themes
                     const themesStr = libraryMode.themes.join(',');
                     const sourceParam = libraryMode.source !== 'all' ? `&source=${libraryMode.source}` : '';
-                    url = `/api/py/api/puzzles/library?minRating=${libraryMode.minRating}&maxRating=${libraryMode.maxRating}&themes=${themesStr}${sourceParam}&count=50`;
+                    url = `/api/py/api/puzzles/library?minRating=${libraryMode.minRating}&maxRating=${libraryMode.maxRating}&themes=${themesStr}${sourceParam}&count=200`;
                     console.log("Fetching library puzzles from:", url);
                 } else {
                     // Normal phase mode
-                    url = `/api/py/api/puzzles/phase/${phase}?count=50`;
+                    url = `/api/py/api/puzzles/phase/${phase}?count=200`;
                     console.log("Fetching puzzles from:", url);
                 }
 
