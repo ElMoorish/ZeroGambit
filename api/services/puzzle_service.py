@@ -366,6 +366,7 @@ class PuzzleService:
                     min_rating=min_rating,
                     max_rating=max_rating,
                     source=source, # Pass source to dynamo service
+                    themes=themes, # Pass themes to dynamo service for direct filtering
                     count=count * 2 # converting to Puzzle object filters further, so fetch more
                 )
                 
