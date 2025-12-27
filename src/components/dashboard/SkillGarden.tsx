@@ -4,7 +4,7 @@ import { useRef, useEffect, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { motion } from "framer-motion";
-import { Leaf, Trophy, Flame, Lock, TrendingUp, Puzzle, Target, Zap, BarChart3 } from "lucide-react";
+import { Leaf, Trophy, Flame, Lock, TrendingUp, Puzzle, Target, Zap, BarChart3, BookOpen } from "lucide-react";
 import Link from "next/link";
 
 gsap.registerPlugin(useGSAP);
@@ -16,6 +16,7 @@ interface UserStats {
     streakDays: number;
     currentElo: number;
     eloChange: number;
+    openingsLearned: number;
 }
 
 const MOCK_STATS: UserStats = {
@@ -25,6 +26,7 @@ const MOCK_STATS: UserStats = {
     streakDays: 5,
     currentElo: 1240,
     eloChange: 12,
+    openingsLearned: 0,
 };
 
 // A more abstract "Growth Ring" visualization instead of a primitive tree
@@ -149,8 +151,24 @@ function StatBar({ label, value, max, color, icon: Icon }: {
 import { useSafeUser } from "@/hooks/useSafeClerk";
 
 export function SkillGardenDashboard() {
-    const stats = MOCK_STATS;
+    const [stats, setStats] = useState<UserStats>(MOCK_STATS);
     const { user } = useSafeUser();
+
+    useEffect(() => {
+        // Fetch real opening progress
+        const uid = localStorage.getItem("grandmaster_user_id");
+        if (uid) {
+            fetch(`/api/py/api/progress/openings/${uid}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        const learnedCount = data.filter((i: any) => i.learned).length;
+                        setStats(prev => ({ ...prev, openingsLearned: learnedCount }));
+                    }
+                })
+                .catch(console.error);
+        }
+    }, []);
 
     // Check for any active subscription
     const subscription = user?.publicMetadata?.subscription as string | undefined;
@@ -217,6 +235,13 @@ export function SkillGardenDashboard() {
                                 max={30}
                                 color="text-violet-500"
                                 icon={Flame}
+                            />
+                            <StatBar
+                                label="Openings Learned"
+                                value={stats.openingsLearned}
+                                max={50} // Goal
+                                color="text-blue-500"
+                                icon={BookOpen}
                             />
 
                             {/* Legend */}
