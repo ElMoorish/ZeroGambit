@@ -15,30 +15,32 @@ async def check_db():
     print(f"Found {count} openings starting with 'E'")
     
     if count > 0:
-        # Fetch first 5
-        cursor = db.openings.find({"eco": {"$regex": "^E"}}).limit(5)
-        print("\n--- Sample Document 1 ---")
+        print("\nScanning all 'E' openings for schema validity...")
+        cursor = db.openings.find({"eco": {"$regex": "^E"}}).limit(2000)
+        valid = 0
+        invalid = 0
+        
         async for doc in cursor:
-            pprint.pprint(doc)
-            
-            # Validation Check
-            missing = []
-            if "eco" not in doc: missing.append("eco")
-            if "name" not in doc: missing.append("name")
-            if "moves" not in doc: missing.append("moves")
-            if "fen" not in doc: missing.append("fen")
-            if "numMoves" not in doc: missing.append("numMoves")
-            
-            if missing:
-                print(f"⚠️ MISSING FIELDS: {missing}")
-            else:
-                print("✅ Basic fields present")
+            try:
+                # Basic Type Checks matching Pydantic
+                if not isinstance(doc.get('eco'), str): raise ValueError("eco not string")
+                if not isinstance(doc.get('name'), str): raise ValueError("name not string")
+                if not isinstance(doc.get('moves'), list): raise ValueError("moves not list")
+                if not isinstance(doc.get('fen'), str): raise ValueError("fen not string")
+                if not isinstance(doc.get('numMoves'), int): raise ValueError("numMoves not int")
                 
-            print(f"Moves type: {type(doc['moves'])}")
-            if isinstance(doc['moves'], list) and len(doc['moves']) > 0:
-                 print(f"Moves sample: {doc['moves'][0]} ({type(doc['moves'][0])})")
-            
-            break # Just one
+                # Check optional list fields if present
+                for field in ['keyIdeas', 'typicalPlans', 'commonTraps']:
+                    if field in doc and not isinstance(doc[field], list):
+                        raise ValueError(f"{field} is present but not a list")
+
+                valid += 1
+            except Exception as e:
+                print(f"❌ Invalid Doc {doc.get('eco', '?')}: {e}")
+                invalid += 1
+                if invalid < 5: pprint.pprint(doc)
+
+        print(f"\nSummary: {valid} valid, {invalid} invalid.")
             
     client.close()
 

@@ -47,10 +47,15 @@ async def list_openings(
     
     cursor = db.openings.find(query).limit(limit)
     openings = []
+    print(f"DEBUG: list_openings eco={eco} search={search} limit={limit}")
     async for doc in cursor:
-        if "_id" in doc:
-            del doc["_id"]
-        openings.append(OpeningResponse(**doc))
+        try:
+            if "_id" in doc:
+                del doc["_id"]
+            openings.append(OpeningResponse(**doc))
+        except Exception as e:
+            print(f"ERROR: Skipping invalid opening {doc.get('eco', 'unknown')}: {e}")
+            continue
     
     total = await db.openings.count_documents(query)
     
