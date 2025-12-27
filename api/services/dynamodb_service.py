@@ -147,8 +147,15 @@ class DynamoDBPuzzleService:
     def get_puzzles_by_phase(self, phase: str, count: int = 10) -> List[Dict]:
         """Get puzzles by game phase (opening, middlegame, endgame) with optimization"""
         
-        # Check cache first (conceptually - implementation would be here)
-        # cache_key = f"phase:{phase}:{count}"
+        # Phase-specific themes for filtering
+        PHASE_THEMES = {
+            "opening": ["opening", "hangingPiece", "advancedPawn", "attackingF2F7"],
+            "middlegame": ["middlegame", "fork", "pin", "skewer", "discoveredAttack", 
+                           "sacrifice", "attraction", "deflection", "doubleCheck",
+                           "interference", "xRayAttack", "zugzwang"],
+            "endgame": ["endgame", "pawnEndgame", "rookEndgame", "queenEndgame", 
+                        "bishopEndgame", "knightEndgame", "queenRookEndgame"]
+        }
         
         # Map phase to typical rating ranges
         phase_ratings = {
@@ -158,6 +165,7 @@ class DynamoDBPuzzleService:
         }
         
         min_rating, max_rating = phase_ratings.get(phase, (800, 1400))
+        phase_themes = PHASE_THEMES.get(phase, [])
         
         # 1. OPTIMIZATION: Use 'phase' as a filter on Rating Bucket Queries
         # Just like with themes, query buckets in the rating range and filter by phase.
@@ -172,7 +180,7 @@ class DynamoDBPuzzleService:
         relevant_buckets = [f"{i}-{i+99}" for i in range(start_bucket_val, end_bucket_val + 1, 100)]
         
         if not relevant_buckets:
-             return self.get_puzzles_by_rating_range(min_rating, max_rating, count)
+             return self.get_puzzles_by_rating_range(min_rating, max_rating, count, themes=phase_themes)
 
         while len(puzzles) < count and attempts < max_attempts:
             attempts += 1
@@ -197,10 +205,13 @@ class DynamoDBPuzzleService:
             except Exception as e:
                 print(f"Error querying bucket {bucket} for phase {phase}: {e}")
         
-        # If we failed to get enough specific phase puzzles, fallback to general rating range
+        # If we failed to get enough specific phase puzzles, fallback to theme-based search
         if len(puzzles) < count:
-            print(f"Phase optimization yielded {len(puzzles)} puzzles, falling back to general rating search.")
-            fallback = self.get_puzzles_by_rating_range(min_rating, max_rating, count - len(puzzles))
+            print(f"Phase optimization yielded {len(puzzles)} puzzles, falling back to theme-based search.")
+            # Pass phase-specific themes to ensure we get puzzles with the right themes
+            fallback = self.get_puzzles_by_rating_range(
+                min_rating, max_rating, count - len(puzzles), themes=phase_themes
+            )
             puzzles.extend(fallback)
             
         random.shuffle(puzzles)
