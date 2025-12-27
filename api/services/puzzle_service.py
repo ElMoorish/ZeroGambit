@@ -472,6 +472,9 @@ class PuzzleService:
             except Exception as e:
                 print(f"DynamoDB random puzzle error: {e}")
 
+        if phase:
+            phase = phase.lower()
+
         if phase and phase in BUILT_IN_PUZZLES:
             puzzles = BUILT_IN_PUZZLES[phase]
         else:
