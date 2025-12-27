@@ -140,10 +140,13 @@ export default function AnalysisPage({ params }: PageProps) {
         if (currentPly === 0) {
             return "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         }
-        return moves[currentPly - 1]?.fen || "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        const fen = moves[currentPly - 1]?.fen || "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        console.log(`[DEBUG] Ply ${currentPly}, FEN: ${fen.substring(0, 30)}...`);
+        return fen;
     }, [currentPly, moves]);
 
     const currentFen = getFenSafe();
+    console.log(`[DEBUG] Board currentFen: ${currentFen.substring(0, 30)}...`);
 
     // Translation map for French -> English
     const translateMessage = useCallback((msg: { title: string; message: string; type: string; move?: string; bestMove?: string }) => {
