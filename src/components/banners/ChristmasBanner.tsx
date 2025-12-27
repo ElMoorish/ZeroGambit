@@ -8,24 +8,21 @@ import { motion } from "framer-motion";
  */
 export function ChristmasBanner() {
     return (
-        <div className="fixed top-0 left-0 w-full h-24 z-[60] overflow-hidden pointer-events-none">
-            {/* Main Banner Stripe */}
+        <div className="fixed top-0 left-0 w-full h-28 z-[60] overflow-visible pointer-events-none">
+            {/* Main Banner Stripe - DIAGONAL */}
             <motion.div
                 initial={{ x: "-100%", opacity: 0 }}
                 animate={{ x: "0%", opacity: 1 }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="absolute -left-10 top-4 w-[120%] h-10 bg-yellow-400 flex items-center shadow-lg"
-                style={{
-                    transform: "rotate(-2deg)",
-                }}
+                className="absolute -left-10 top-3 w-[120%] h-11 bg-yellow-400 flex items-center shadow-lg -rotate-2"
             >
                 {/* Repeating Text - Scrolling */}
                 <motion.div
                     className="flex items-center gap-8 whitespace-nowrap"
-                    animate={{ x: [0, -500] }}
-                    transition={{ repeat: Infinity, duration: 15, ease: "linear" }}
+                    animate={{ x: [0, -600] }}
+                    transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
                 >
-                    {Array(15).fill(null).map((_, i) => (
+                    {Array(20).fill(null).map((_, i) => (
                         <span key={i} className="flex items-center gap-6 text-black font-black text-base tracking-wide">
                             🎄 MERRY CHRISTMAS 🎅 UNDER CONSTRUCTION 🚧
                         </span>
@@ -33,22 +30,19 @@ export function ChristmasBanner() {
                 </motion.div>
             </motion.div>
 
-            {/* Second Stripe (offset) */}
+            {/* Second Stripe (offset) - DIAGONAL */}
             <motion.div
                 initial={{ x: "100%", opacity: 0 }}
                 animate={{ x: "0%", opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-                className="absolute -left-10 top-12 w-[120%] h-8 bg-yellow-300 flex items-center shadow-md"
-                style={{
-                    transform: "rotate(-1.5deg)",
-                }}
+                className="absolute -left-10 top-12 w-[120%] h-9 bg-yellow-300 flex items-center shadow-md -rotate-1"
             >
                 <motion.div
                     className="flex items-center gap-10 whitespace-nowrap text-black font-bold text-sm"
-                    animate={{ x: [-300, 0] }}
-                    transition={{ repeat: Infinity, duration: 12, ease: "linear" }}
+                    animate={{ x: [-400, 0] }}
+                    transition={{ repeat: Infinity, duration: 15, ease: "linear" }}
                 >
-                    {Array(15).fill(null).map((_, i) => (
+                    {Array(20).fill(null).map((_, i) => (
                         <span key={i} className="flex items-center gap-4">
                             ⚠️ ACTIVE DEVELOPMENT ⚠️ NEW FEATURES COMING ⚠️
                         </span>
