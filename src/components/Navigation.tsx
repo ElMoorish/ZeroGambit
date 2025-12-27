@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Menu,
@@ -20,9 +21,11 @@ import {
     Gift,
     Video,
     Swords,
-    Cpu
+    Cpu,
+    Lock
 } from "lucide-react";
 import { useSafeUser, SafeSignedIn, SafeSignedOut, SafeSignInButton, SafeUserButton } from "@/hooks/useSafeClerk";
+import { ComingSoonRibbon } from "@/components/banners/ComingSoonRibbon";
 
 interface NavItem {
     id: string;
@@ -32,6 +35,8 @@ interface NavItem {
     enabled: boolean;
     description: string;
     color: string;
+    comingSoon?: boolean; // Features under development
+    adminOnly?: boolean;  // Only admin can access
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -87,7 +92,9 @@ const NAV_ITEMS: NavItem[] = [
         icon: Dna,
         enabled: true,
         description: "Your playstyle profile",
-        color: "text-pink-500"
+        color: "text-pink-500",
+        comingSoon: true,
+        adminOnly: true
     },
     {
         id: "rivals",
@@ -96,7 +103,9 @@ const NAV_ITEMS: NavItem[] = [
         icon: Swords,
         enabled: true,
         description: "Challenge friends",
-        color: "text-red-500"
+        color: "text-red-500",
+        comingSoon: true,
+        adminOnly: true
     },
     {
         id: "studio",
@@ -105,7 +114,9 @@ const NAV_ITEMS: NavItem[] = [
         icon: Film,
         enabled: true,
         description: "AI-powered captions",
-        color: "text-orange-500"
+        color: "text-orange-500",
+        comingSoon: true,
+        adminOnly: true
     },
     {
         id: "video-studio",
@@ -114,7 +125,9 @@ const NAV_ITEMS: NavItem[] = [
         icon: Video,
         enabled: true,
         description: "Create chess videos",
-        color: "text-cyan-500"
+        color: "text-cyan-500",
+        comingSoon: true,
+        adminOnly: true
     },
     {
         id: "benchmark",
@@ -123,7 +136,9 @@ const NAV_ITEMS: NavItem[] = [
         icon: Cpu,
         enabled: true,
         description: "Test your hardware",
-        color: "text-slate-400"
+        color: "text-slate-400",
+        comingSoon: true,
+        adminOnly: true
     },
     {
         id: "referrals",
@@ -237,14 +252,21 @@ export function Navigation() {
                             <nav className="flex-1 overflow-y-auto p-6 pt-4 space-y-2">
                                 {visibleNavItems.map((item, index) => {
                                     const Icon = item.icon;
+                                    const isLocked = item.adminOnly && !isAdmin;
+                                    const showComingSoon = item.comingSoon && !isAdmin;
+
                                     return (
                                         <motion.div
                                             key={item.id}
                                             initial={{ opacity: 0, x: 20 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: index * 0.05 }}
+                                            className="relative"
                                         >
-                                            {item.enabled ? (
+                                            {/* Coming Soon Ribbon */}
+                                            {showComingSoon && <ComingSoonRibbon />}
+
+                                            {item.enabled && !isLocked ? (
                                                 <Link
                                                     href={item.href}
                                                     onClick={() => setIsOpen(false)}
@@ -260,15 +282,21 @@ export function Navigation() {
                                                     <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                                                 </Link>
                                             ) : (
-                                                <div className="flex items-center gap-3 p-3 rounded-xl opacity-50 cursor-not-allowed">
+                                                <div
+                                                    className="flex items-center gap-3 p-3 rounded-xl opacity-60 cursor-not-allowed"
+                                                    title={isLocked ? "Coming Soon - Admin Preview Only" : "Coming Soon"}
+                                                >
                                                     <div className={`p-2 rounded-lg bg-secondary ${item.color}`}>
                                                         <Icon className="w-5 h-5" />
                                                     </div>
                                                     <div className="flex-1">
-                                                        <div className="font-medium">{item.label}</div>
+                                                        <div className="font-medium flex items-center gap-2">
+                                                            {item.label}
+                                                            {isLocked && <Lock className="w-3 h-3 text-red-500" />}
+                                                        </div>
                                                         <div className="text-xs text-muted-foreground">{item.description}</div>
                                                     </div>
-                                                    <span className="text-xs bg-secondary px-2 py-1 rounded-full">Soon</span>
+                                                    <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-full font-medium">Soon</span>
                                                 </div>
                                             )}
                                         </motion.div>
@@ -307,7 +335,7 @@ export function Navigation() {
                         </motion.div>
                     </>
                 )}
-            </AnimatePresence>
+            </AnimatePresence >
         </>
     );
 }

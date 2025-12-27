@@ -110,15 +110,59 @@ export default function ModuleTrainerPage() {
 
         try {
             const themesStr = module.themes.join(',');
-            const url = `/api/py/api/puzzles/curriculum?minRating=${minR}&maxRating=${maxR}&themes=${themesStr}&count=10`;
+            const url = `/api/py/api/puzzles/curriculum?minRating=${minR}&maxRating=${maxR}&themes=${themesStr}&count=20`;
             console.log(`Fetching Level ${level} puzzles (${minR}-${maxR})...`);
 
             const res = await fetch(url);
             if (res.ok) {
                 const data = await res.json();
                 if (data.puzzles && data.puzzles.length > 0) {
-                    setPuzzles(data.puzzles);
-                    loadPuzzle(data.puzzles[0]);
+                    // Filter out corrupted puzzles (must have pieces for both sides + legal moves)
+                    const validPuzzles = data.puzzles.filter((p: PuzzleData) => {
+                        try {
+                            const fen = p.fen || '';
+                            const board = fen.split(' ')[0] || '';
+
+                            // Check if there are lowercase (black) and uppercase (white) pieces
+                            const hasBlack = /[pnbrqk]/.test(board);
+                            const hasWhite = /[PNBRQK]/.test(board);
+                            const hasValidMoves = p.moves && p.moves.length > 0;
+
+                            if (!hasBlack || !hasWhite || !hasValidMoves) return false;
+
+                            // Deeper validation: simulate the puzzle start
+                            const testChess = new Chess(fen);
+
+                            // Make opponent's first move
+                            if (p.moves.length > 0) {
+                                const oppMove = p.moves[0];
+                                const from = oppMove.slice(0, 2) as Square;
+                                const to = oppMove.slice(2, 4) as Square;
+                                const promo = oppMove.slice(4) || undefined;
+                                const result = testChess.move({ from, to, promotion: promo as any });
+                                if (!result) return false; // Invalid opponent move
+                            }
+
+                            // Check if player has legal moves after opponent's move
+                            const legalMoves = testChess.moves();
+                            if (legalMoves.length === 0) return false; // Checkmate or stalemate
+
+                            // Check the position isn't already over
+                            if (testChess.isGameOver()) return false;
+
+                            return true;
+                        } catch (e) {
+                            console.warn("Puzzle validation failed:", p.id, e);
+                            return false;
+                        }
+                    });
+
+                    if (validPuzzles.length > 0) {
+                        setPuzzles(validPuzzles);
+                        loadPuzzle(validPuzzles[0]);
+                    } else {
+                        console.warn("All fetched puzzles were invalid, retrying...");
+                    }
                 }
             }
         } catch (e) {

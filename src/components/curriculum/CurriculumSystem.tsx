@@ -241,7 +241,8 @@ function PhaseDetailModal({
                         {phase.modules.map((module, index) => {
                             const moduleProgress = progress[module.id] || 0;
                             const isCompleted = moduleProgress >= 100;
-                            const isUnlocked = index === 0 || (progress[phase.modules[index - 1].id] || 0) >= module.requiredAccuracy;
+                            // All levels unlocked for now (during development)
+                            const isUnlocked = true;
 
                             // Build the puzzle URL with filters
                             const puzzleUrl = `/curriculum/${module.id}`;
