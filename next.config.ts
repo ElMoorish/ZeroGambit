@@ -31,7 +31,13 @@ const nextConfig: NextConfig = {
   // Rewrites to proxy requests to Python backend
   // Frontend calls: /api/py/api/health -> Backend: /api/health
   async rewrites() {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+    let backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+
+    // Auto-upgrade trycloudflare URLs to HTTPS to prevent Mixed Content errors
+    if (backendUrl.includes('trycloudflare.com') && backendUrl.startsWith('http://')) {
+      backendUrl = backendUrl.replace('http://', 'https://');
+    }
+
     return [
       {
         source: '/api/py/:path*',
