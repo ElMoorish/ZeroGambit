@@ -296,7 +296,6 @@ export function Navigation() {
                                                         </div>
                                                         <div className="text-xs text-muted-foreground">{item.description}</div>
                                                     </div>
-                                                    <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-full font-medium">Soon</span>
                                                 </div>
                                             )}
                                         </motion.div>
