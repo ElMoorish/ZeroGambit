@@ -45,8 +45,9 @@ except ImportError:
     DynamoDBPuzzleService = None
 
 # Lichess puzzle themes mapped to game phases
+# Lichess puzzle themes mapped to game phases - STRICT MAPPING
 PHASE_THEMES = {
-    "opening": ["opening", "hangingPiece", "advancedPawn", "attackingF2F7"],
+    "opening": ["opening", "attackingF2F7"],  # Removed generic themes like hangingPiece
     "middlegame": ["middlegame", "fork", "pin", "skewer", "discoveredAttack", 
                    "sacrifice", "attraction", "deflection", "doubleCheck",
                    "interference", "xRayAttack", "zugzwang"],
@@ -490,10 +491,34 @@ class PuzzleService:
         return Puzzle(**selected)
     
     def _determine_phase(self, themes: List[str]) -> str:
-        """Determine game phase from puzzle themes"""
+        """Determine game phase from puzzle themes with strict priority"""
+        themes_set = {t.lower() for t in themes}
+        
+        # 1. Explicit Phase Tags (Prioritize Endgame/Opening over Middlegame)
+        if "endgame" in themes_set:
+            return "endgame"
+        if "opening" in themes_set:
+            return "opening"
+        if "middlegame" in themes_set:
+            return "middlegame"
+            
+        # 2. Key Theme Inference
+        # Check specific Openings (e.g. "sicilianDefense")
+        for t in themes_set:
+            if "opening" in t or "defense" in t or "gambit" in t or "game" in t:
+                # Heuristic: if it sounds like an opening name
+                 if any(k in t for k in ["indian", "caro", "french", "sicilian", "slav", "scandi", "scotch", "vienna"]):
+                     return "opening"
+
+        # Check explicit endgame types if 'endgame' tag missing
+        if any("endgame" in t for t in themes_set):
+            return "endgame"
+
+        # 3. Fallback to Theme Mapping
         for phase, phase_themes in PHASE_THEMES.items():
             if any(theme in phase_themes for theme in themes):
                 return phase
+                
         return "middlegame"  # Default
 
 
