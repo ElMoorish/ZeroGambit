@@ -38,7 +38,7 @@ export default function ModuleTrainerPage() {
 
     // State
     const [module, setModule] = useState<CurriculumModule | null>(null);
-    const [level, setLevel] = useState(1); // 1-5
+    const [level, setLevel] = useState(1); // 1-10
     const [xp, setXp] = useState(0); // Session XP
     const [totalXp, setTotalXp] = useState(0); // Persisted XP for this module
     const [streak, setStreak] = useState(0);
@@ -268,9 +268,9 @@ export default function ModuleTrainerPage() {
         setStreak(s => {
             const newStreak = s + 1;
 
-            // Level Up Logic
-            if (newStreak % 3 === 0 && level < 5) {
-                setLevel(l => l + 1);
+            // Level Up Logic - every 3 puzzles, up to level 10
+            if (newStreak % 3 === 0 && level < 10) {
+                setLevel(l => Math.min(l + 1, 10));
             }
 
             return newStreak;
@@ -285,7 +285,7 @@ export default function ModuleTrainerPage() {
         if (user && moduleId) {
             // Need to calculate new values here because state updates are async
             const newStreak = streak + 1;
-            const newLevel = (newStreak % 3 === 0 && level < 5) ? level + 1 : level;
+            const newLevel = (newStreak % 3 === 0 && level < 10) ? Math.min(level + 1, 10) : level;
             const newTotalXp = totalXp + gainedXp;
 
             curriculumApi.updateModuleProgress(user.id, moduleId, {

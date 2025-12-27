@@ -1,6 +1,7 @@
 import { ModuleProgress, UserCurriculumProgress } from "@/types/curriculum";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Use relative URL - this goes through Next.js proxy to backend
+const API_BASE = "/api/py";
 
 export const curriculumApi = {
     /**
