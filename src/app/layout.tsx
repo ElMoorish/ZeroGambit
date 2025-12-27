@@ -5,6 +5,7 @@ import { Navigation } from "@/components/Navigation";
 import { BoardThemeProvider } from "@/context/BoardThemeContext";
 import { CommandPalette } from "@/components/CommandPalette";
 import { ClientClerkProvider } from "@/components/ClientClerkProvider";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   variable: "--font-geist-sans",
@@ -58,6 +59,7 @@ export default function RootLayout({
             <CommandPalette />
           </BoardThemeProvider>
         </ClientClerkProvider>
+        <Analytics />
       </body>
     </html>
   );
