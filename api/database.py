@@ -41,6 +41,10 @@ async def connect_db():
     await db.puzzles.create_index("id", unique=True)
     await db.puzzles.create_index("phase")
     await db.puzzles.create_index("rating")
+    # Opening index (Critical for performance)
+    await db.openings.create_index("eco")
+    await db.openings.create_index("name")
+    await db.openings.create_index("fen")
     
     print(f"Connected to MongoDB: {db_name}")
 
