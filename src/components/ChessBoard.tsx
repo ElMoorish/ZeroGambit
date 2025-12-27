@@ -34,8 +34,8 @@ interface ChessBoardProps {
     id?: string;
 }
 
-// Memoize the component to prevent re-renders when parent state changes but props don't
-export const ChessBoard = React.memo(ChessBoardComponent);
+// Export directly without memo to ensure position updates always trigger re-render
+export const ChessBoard = ChessBoardComponent;
 
 function ChessBoardComponent({
     position,
