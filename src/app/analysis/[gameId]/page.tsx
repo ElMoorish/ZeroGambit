@@ -967,7 +967,7 @@ export default function AnalysisPage({ params }: PageProps) {
                             <div className="flex-1 flex justify-center">
                                 <ChessBoard
                                     id={`analysis-board-${gameData?._id || "default"}`}
-                                    key={currentPly} // Force remount to ensure visual update
+                                    key={currentFen} // Force remount on every FEN change - fixes react-chessboard caching
                                     position={currentFen}
                                     interactable={false}
                                     bestMove={bestMoveArrow}
