@@ -14,6 +14,7 @@ Seeds ~500 main chess openings with:
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import json
 import chess
 
 # Main chess openings organized by ECO categories
