@@ -173,12 +173,15 @@ export default function OpeningsPage() {
                 const response = await fetch(`/api/py/api/openings/?eco=${selectedCategory}&limit=100`);
                 if (response.ok) {
                     const data = await response.json();
+                    console.log("✅ Fetched openings:", data.openings?.length);
                     const openingsList = data.openings || [];
                     setOpenings(openingsList);
                     // Auto-load first opening so board isn't empty
                     if (openingsList.length > 0 && !selectedOpening) {
                         loadOpening(openingsList[0]);
                     }
+                } else {
+                    console.error("❌ API Error:", response.status, await response.text());
                 }
             } catch (error) {
                 console.error("Failed to fetch openings:", error);
@@ -437,11 +440,11 @@ export default function OpeningsPage() {
                     </div>
                 ) : mode === "explore" ? (
                     /* EXPLORE MODE */
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Left Panel - Categories & Search */}
-                        <div className="space-y-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-140px)]">
+                        {/* Col 1: Categories & Search */}
+                        <div className="flex flex-col gap-4 overflow-hidden">
                             {/* Search */}
-                            <div className="relative">
+                            <div className="relative shrink-0">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                                 <input
                                     type="text"
@@ -453,9 +456,9 @@ export default function OpeningsPage() {
                             </div>
 
                             {/* Categories */}
-                            <div className="bg-card rounded-2xl border border-border p-4">
-                                <h2 className="font-semibold mb-3">ECO Categories</h2>
-                                <div className="space-y-2">
+                            <div className="bg-card rounded-2xl border border-border flex flex-col overflow-hidden flex-1">
+                                <h2 className="font-semibold p-4 border-b border-border bg-card">ECO Categories</h2>
+                                <div className="overflow-y-auto p-2 space-y-2 flex-1 scrollbar-thin scrollbar-thumb-secondary">
                                     {categories.map((cat) => (
                                         <button
                                             key={cat.code}
@@ -467,7 +470,7 @@ export default function OpeningsPage() {
                                         >
                                             <div className="text-left">
                                                 <div className="font-medium">{cat.code}xx</div>
-                                                <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                                <div className="text-xs text-muted-foreground truncate max-w-[150px]">
                                                     {cat.name}
                                                 </div>
                                             </div>
@@ -476,35 +479,42 @@ export default function OpeningsPage() {
                                     ))}
                                 </div>
                             </div>
+                        </div>
 
-                            {/* Opening List */}
-                            {openings.length > 0 && (
-                                <div className="bg-card rounded-2xl border border-border p-4 max-h-[400px] overflow-y-auto">
-                                    <h2 className="font-semibold mb-3">Openings ({openings.length})</h2>
-                                    <div className="space-y-1">
-                                        {openings.map((opening) => (
-                                            <button
-                                                key={`${opening.eco}-${opening.name}`}
-                                                onClick={() => loadOpening(opening)}
-                                                className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${selectedOpening?.name === opening.name
-                                                    ? "bg-primary/10"
-                                                    : "hover:bg-secondary"
-                                                    }`}
-                                            >
-                                                <span className="text-xs font-mono bg-secondary px-2 py-0.5 rounded">
-                                                    {opening.eco}
-                                                </span>
-                                                <div className="flex-1 min-w-0 flex items-center justify-between">
-                                                    <span className="text-sm truncate pr-2">{opening.name}</span>
-                                                    {learnedEcob.has(opening.eco) && (
-                                                        <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                                                    )}
-                                                </div>
-                                            </button>
-                                        ))}
+                        {/* Col 2: Opening List */}
+                        <div className="bg-card rounded-2xl border border-border flex flex-col overflow-hidden">
+                            <h2 className="font-semibold p-4 border-b border-border bg-card">
+                                Openings {openings.length > 0 && <span className="text-muted-foreground font-normal">({openings.length})</span>}
+                            </h2>
+                            <div className="overflow-y-auto p-2 space-y-1 flex-1 scrollbar-thin scrollbar-thumb-secondary">
+                                {openings.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-4 text-center">
+                                        <Loader2 className="w-8 h-8 animate-spin mb-2 opacity-20" />
+                                        <p>Loading or Select Category...</p>
                                     </div>
-                                </div>
-                            )}
+                                ) : (
+                                    openings.map((opening) => (
+                                        <button
+                                            key={`${opening.eco}-${opening.name}`}
+                                            onClick={() => loadOpening(opening)}
+                                            className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${selectedOpening?.name === opening.name
+                                                ? "bg-primary/10"
+                                                : "hover:bg-secondary"
+                                                }`}
+                                        >
+                                            <span className="text-xs font-mono bg-secondary px-2 py-0.5 rounded text-foreground">
+                                                {opening.eco}
+                                            </span>
+                                            <div className="flex-1 min-w-0 flex items-center justify-between">
+                                                <span className="text-sm truncate pr-2">{opening.name}</span>
+                                                {learnedEcob.has(opening.eco) && (
+                                                    <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                                )}
+                                            </div>
+                                        </button>
+                                    ))
+                                )}
+                            </div>
                         </div>
 
                         {/* Center - Chess Board */}
