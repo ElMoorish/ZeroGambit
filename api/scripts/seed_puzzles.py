@@ -15,9 +15,10 @@ import sys
 import time
 
 # Batch size for inserts (higher = faster but more memory)
+BATCH_SIZE = 1000
 # Limit for number of puzzles to seed (to save space/time)
-# 25,000 is plenty for a personal server (approx 5-10MB)
-PUZZLE_LIMIT = 25000
+# user has 20GB, so 5.6M puzzles (~6GB) is safe.
+PUZZLE_LIMIT = 6000000
 
 # STRICT MAPPING (Matches puzzle_service.py)
 PHASE_KEYWORDS = {
