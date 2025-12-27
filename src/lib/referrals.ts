@@ -69,6 +69,18 @@ export const ANNUAL_PRICE = 45.00;
 export const COMMISSION_RATE = 0.30;
 export const COMMISSION_AMOUNT = ANNUAL_PRICE * COMMISSION_RATE; // $13.50
 
+// Special Owner Referral Code (looks like a regular code, but is hardcoded)
+// This code is always active and doesn't require annual subscription
+export const OWNER_REFERRAL_CODE = 'ZGPRO2025';
+export const OWNER_USER_ID = 'owner_system'; // Pseudo user ID for owner referrals
+
+/**
+ * Check if a code is the special owner code
+ */
+export function isOwnerCode(code: string): boolean {
+    return code.toUpperCase() === OWNER_REFERRAL_CODE;
+}
+
 // Database class
 class ReferralDB extends Dexie {
     referralCodes!: EntityTable<ReferralCode, 'id'>;
@@ -163,6 +175,21 @@ export async function deactivateReferralCode(userId: string): Promise<void> {
  * Record a referral link click
  */
 export async function recordReferralClick(referralCode: string): Promise<Referral | null> {
+    // Handle special owner code (always active, bypasses database)
+    if (isOwnerCode(referralCode)) {
+        const referral: Omit<Referral, 'id'> = {
+            referrerId: OWNER_USER_ID,
+            referralCode: OWNER_REFERRAL_CODE,
+            status: 'clicked',
+            commissionAmount: 0,
+            clickedAt: new Date(),
+        };
+
+        const id = await referralDb.referrals.add(referral as Referral);
+        return { ...referral, id: id as number };
+    }
+
+    // Regular code lookup
     const codeRecord = await getReferralCodeByCode(referralCode);
     if (!codeRecord || !codeRecord.isActive) {
         return null;
