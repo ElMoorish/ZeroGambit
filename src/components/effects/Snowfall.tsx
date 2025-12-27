@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 interface Snowflake {
     id: number;
@@ -9,19 +9,53 @@ interface Snowflake {
     animationDuration: number;
     animationDelay: number;
     opacity: number;
+    isBlizzard?: boolean; // Extra flakes that only appear in blizzard
 }
 
 /**
  * Scroll-Aware Snowfall Effect
  * 
- * - Light snow normally
- * - BLIZZARD during LocalFirstExplainer section
- * - Back to light after HeroConverter
+ * - Keeps base snowflakes always visible
+ * - ADDS extra blizzard flakes during blizzard zone (no regeneration)
+ * - Smooth transitions with CSS opacity
  */
-export function Snowfall({ intensity = "light" }: { intensity?: "light" | "medium" | "heavy" }) {
-    const [snowflakes, setSnowflakes] = useState<Snowflake[]>([]);
+export function Snowfall() {
     const [mounted, setMounted] = useState(false);
-    const [currentIntensity, setCurrentIntensity] = useState<"light" | "medium" | "heavy">(intensity);
+    const [isBlizzard, setIsBlizzard] = useState(false);
+
+    // Generate snowflakes once - memoized to prevent regeneration
+    const baseFlakes = useMemo(() => {
+        const flakes: Snowflake[] = [];
+        for (let i = 0; i < 40; i++) {
+            flakes.push({
+                id: i,
+                left: Math.random() * 100,
+                size: Math.random() * 6 + 4,
+                animationDuration: Math.random() * 10 + 10,
+                animationDelay: Math.random() * 8,
+                opacity: Math.random() * 0.5 + 0.5,
+                isBlizzard: false,
+            });
+        }
+        return flakes;
+    }, []);
+
+    // Extra blizzard flakes - also memoized
+    const blizzardFlakes = useMemo(() => {
+        const flakes: Snowflake[] = [];
+        for (let i = 40; i < 150; i++) {
+            flakes.push({
+                id: i,
+                left: Math.random() * 100,
+                size: Math.random() * 8 + 3,
+                animationDuration: Math.random() * 4 + 3,
+                animationDelay: Math.random() * 2,
+                opacity: Math.random() * 0.3 + 0.7,
+                isBlizzard: true,
+            });
+        }
+        return flakes;
+    }, []);
 
     // Scroll listener for blizzard zone
     useEffect(() => {
@@ -31,84 +65,49 @@ export function Snowfall({ intensity = "light" }: { intensity?: "light" | "mediu
             const scrollY = window.scrollY;
             const viewportHeight = window.innerHeight;
 
-            // Blizzard zone: from LocalFirstExplainer to just before HeroConverter
             const blizzardStart = viewportHeight * 0.8;
-            const blizzardEnd = viewportHeight * 5; // Extended to reach From Data to Drama
+            const blizzardEnd = viewportHeight * 5;
 
-            if (scrollY >= blizzardStart && scrollY <= blizzardEnd) {
-                setCurrentIntensity("heavy");
-            } else {
-                setCurrentIntensity("light");
-            }
+            setIsBlizzard(scrollY >= blizzardStart && scrollY <= blizzardEnd);
         };
 
         window.addEventListener("scroll", handleScroll, { passive: true });
-        handleScroll(); // Initial check
+        handleScroll();
 
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    // Generate snowflakes based on current intensity
-    useEffect(() => {
-        const flakeCount = currentIntensity === "light" ? 40
-            : currentIntensity === "medium" ? 80
-                : 150; // BLIZZARD!
-
-        const flakes: Snowflake[] = [];
-        for (let i = 0; i < flakeCount; i++) {
-            flakes.push({
-                id: i,
-                left: Math.random() * 100,
-                size: currentIntensity === "heavy"
-                    ? Math.random() * 8 + 3 // 3-11px in blizzard
-                    : Math.random() * 6 + 4, // 4-10px normally
-                animationDuration: currentIntensity === "heavy"
-                    ? Math.random() * 4 + 3 // 3-7s (FAST in blizzard)
-                    : Math.random() * 10 + 10, // 10-20s normally
-                animationDelay: Math.random() * 3,
-                opacity: currentIntensity === "heavy"
-                    ? Math.random() * 0.3 + 0.7 // 0.7-1.0 (very visible)
-                    : Math.random() * 0.5 + 0.5, // 0.5-1.0
-            });
-        }
-        setSnowflakes(flakes);
-    }, [currentIntensity]);
-
-    // Don't render on server
     if (!mounted) return null;
 
-    // Dynamic animation based on intensity
-    const swayAmount = currentIntensity === "heavy" ? "40px" : "20px";
-    const windDirection = currentIntensity === "heavy" ? "-30px" : "0px";
+    // Show base flakes always + blizzard flakes when in blizzard zone
+    const visibleFlakes = isBlizzard
+        ? [...baseFlakes, ...blizzardFlakes]
+        : baseFlakes;
 
     return (
         <>
-            {/* CSS Keyframes - Dynamic based on intensity */}
             <style jsx global>{`
                 @keyframes snowfall {
                     0% {
                         transform: translateY(-20px) translateX(0);
-                        opacity: 1;
                     }
                     25% {
-                        transform: translateY(25vh) translateX(${swayAmount});
+                        transform: translateY(25vh) translateX(15px);
                     }
                     50% {
-                        transform: translateY(50vh) translateX(${windDirection});
+                        transform: translateY(50vh) translateX(-10px);
                     }
                     75% {
-                        transform: translateY(75vh) translateX(${swayAmount});
+                        transform: translateY(75vh) translateX(20px);
                     }
                     100% {
-                        transform: translateY(100vh) translateX(${windDirection});
-                        opacity: 0.3;
+                        transform: translateY(100vh) translateX(-5px);
                     }
                 }
                 
                 @keyframes blizzard {
                     0% {
                         transform: translateY(-20px) translateX(0) rotate(0deg);
-                        opacity: 1;
                     }
                     25% {
                         transform: translateY(20vh) translateX(-40px) rotate(90deg);
@@ -121,24 +120,27 @@ export function Snowfall({ intensity = "light" }: { intensity?: "light" | "mediu
                     }
                     100% {
                         transform: translateY(100vh) translateX(20px) rotate(360deg);
-                        opacity: 0.5;
                     }
+                }
+                
+                .snowflake {
+                    transition: opacity 0.5s ease;
                 }
             `}</style>
 
             <div className="fixed inset-0 z-[5] pointer-events-none overflow-hidden">
-                {snowflakes.map((flake) => (
+                {visibleFlakes.map((flake) => (
                     <div
                         key={flake.id}
-                        className="absolute rounded-full bg-white"
+                        className="snowflake absolute rounded-full bg-white"
                         style={{
                             left: `${flake.left}%`,
                             top: "-20px",
                             width: `${flake.size}px`,
                             height: `${flake.size}px`,
                             opacity: flake.opacity,
-                            animation: `${currentIntensity === "heavy" ? "blizzard" : "snowfall"} ${flake.animationDuration}s linear ${flake.animationDelay}s infinite`,
-                            boxShadow: currentIntensity === "heavy"
+                            animation: `${flake.isBlizzard ? "blizzard" : "snowfall"} ${flake.animationDuration}s linear ${flake.animationDelay}s infinite`,
+                            boxShadow: flake.isBlizzard
                                 ? "0 0 6px rgba(255,255,255,1)"
                                 : "0 0 3px rgba(255,255,255,0.8)",
                         }}
