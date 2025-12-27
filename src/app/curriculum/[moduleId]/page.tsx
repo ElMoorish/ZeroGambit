@@ -52,6 +52,32 @@ export default function ModuleTrainerPage() {
     const [status, setStatus] = useState<"solving" | "correct" | "wrong">("solving");
     const [playerColor, setPlayerColor] = useState<"white" | "black">("white");
     const { playMove, playCapture, playCheck, playBrilliant, playBlunder } = useSounds();
+    const [showModuleComplete, setShowModuleComplete] = useState(false);
+    const [nextModule, setNextModule] = useState<CurriculumModule | null>(null);
+
+    // Helper: Find the next module in the curriculum progression
+    const getNextModule = useCallback((currentModuleId: string): CurriculumModule | null => {
+        // Flatten all modules with their phase index for ordering
+        const allModules: { module: CurriculumModule; phaseIdx: number; moduleIdx: number }[] = [];
+
+        CURRICULUM_PHASES.forEach((phase, phaseIdx) => {
+            phase.modules.forEach((mod, moduleIdx) => {
+                allModules.push({ module: mod, phaseIdx, moduleIdx });
+            });
+        });
+
+        // Find current position
+        const currentIdx = allModules.findIndex(m => m.module.id === currentModuleId);
+        if (currentIdx === -1) return null;
+
+        // Get next module (wraps to beginning if at end, or null if truly complete)
+        if (currentIdx < allModules.length - 1) {
+            return allModules[currentIdx + 1].module;
+        }
+
+        // At the very end - all curriculum complete!
+        return null;
+    }, []);
 
     // Load Module Info
     useEffect(() => {
@@ -270,7 +296,19 @@ export default function ModuleTrainerPage() {
 
             // Level Up Logic - every 3 puzzles, up to level 10
             if (newStreak % 3 === 0 && level < 10) {
-                setLevel(l => Math.min(l + 1, 10));
+                const nextLevel = Math.min(level + 1, 10);
+                setLevel(nextLevel);
+
+                // Check if we just reached Level 10 - module complete!
+                if (nextLevel === 10 && moduleId) {
+                    const next = getNextModule(moduleId);
+                    setNextModule(next);
+                    // Small delay to let the user see Level 10 before showing completion
+                    setTimeout(() => {
+                        setShowModuleComplete(true);
+                        playBrilliant(); // Celebration sound!
+                    }, 1500);
+                }
             }
 
             return newStreak;
@@ -436,6 +474,89 @@ export default function ModuleTrainerPage() {
                 </div>
 
             </main>
+
+            {/* Module Completion Modal */}
+            <AnimatePresence>
+                {showModuleComplete && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.8, opacity: 0 }}
+                            className="bg-card rounded-3xl border border-primary/30 p-8 max-w-md w-full text-center"
+                        >
+                            {/* Celebration */}
+                            <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ type: "spring", delay: 0.2 }}
+                                className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center"
+                            >
+                                <Trophy className="w-12 h-12 text-white" />
+                            </motion.div>
+
+                            <h2 className="text-2xl font-bold mb-2">🎉 Module Complete!</h2>
+                            <p className="text-muted-foreground mb-4">
+                                You've mastered <strong>{module?.title}</strong> at Level 10!
+                            </p>
+
+                            {/* Stats */}
+                            <div className="flex justify-center gap-6 mb-6">
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-primary">{totalXp}</div>
+                                    <div className="text-xs text-muted-foreground">Total XP</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-amber-400">10</div>
+                                    <div className="text-xs text-muted-foreground">Max Level</div>
+                                </div>
+                            </div>
+
+                            {/* Next Module or Complete */}
+                            {nextModule ? (
+                                <div className="space-y-3">
+                                    <p className="text-sm text-muted-foreground">
+                                        Ready for your next challenge?
+                                    </p>
+                                    <button
+                                        onClick={() => router.push(`/curriculum/${nextModule.id}`)}
+                                        className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        Continue to {nextModule.title}
+                                        <ChevronRight className="w-5 h-5" />
+                                    </button>
+                                    <Link
+                                        href="/curriculum"
+                                        className="block w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                                    >
+                                        Back to Curriculum Overview
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    <div className="text-lg font-bold text-emerald-400">
+                                        🏆 All Curriculum Complete!
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                        You've completed the entire curriculum. You're a grandmaster in training!
+                                    </p>
+                                    <Link
+                                        href="/curriculum"
+                                        className="block w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors"
+                                    >
+                                        Back to Curriculum
+                                    </Link>
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
