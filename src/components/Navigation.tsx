@@ -253,7 +253,8 @@ export function Navigation() {
                                 {visibleNavItems.map((item, index) => {
                                     const Icon = item.icon;
                                     const isLocked = item.adminOnly && !isAdmin;
-                                    const showComingSoon = item.comingSoon && !isAdmin;
+                                    // Show ribbon for ALL users on comingSoon features
+                                    const showComingSoon = item.comingSoon === true;
 
                                     return (
                                         <motion.div

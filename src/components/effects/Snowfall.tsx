@@ -19,7 +19,8 @@ interface Snowflake {
 export function Snowfall({ intensity = "light" }: { intensity?: "light" | "medium" | "heavy" }) {
     const [snowflakes, setSnowflakes] = useState<Snowflake[]>([]);
 
-    const flakeCount = intensity === "light" ? 30 : intensity === "medium" ? 60 : 100;
+    // Increased flake counts for better visibility
+    const flakeCount = intensity === "light" ? 50 : intensity === "medium" ? 100 : 150;
 
     useEffect(() => {
         const flakes: Snowflake[] = [];
@@ -27,10 +28,10 @@ export function Snowfall({ intensity = "light" }: { intensity?: "light" | "mediu
             flakes.push({
                 id: i,
                 x: Math.random() * 100, // percentage across screen
-                size: Math.random() * 4 + 2, // 2-6px
-                duration: Math.random() * 10 + 10, // 10-20s fall time
-                delay: Math.random() * 10, // stagger start
-                opacity: Math.random() * 0.6 + 0.2, // 0.2-0.8
+                size: Math.random() * 6 + 4, // 4-10px (larger)
+                duration: Math.random() * 8 + 8, // 8-16s fall time (faster)
+                delay: Math.random() * 5, // less stagger
+                opacity: Math.random() * 0.4 + 0.6, // 0.6-1.0 (brighter)
             });
         }
         setSnowflakes(flakes);
