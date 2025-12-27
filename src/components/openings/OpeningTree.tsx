@@ -1,242 +1,178 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronRight, ChevronDown, TrendingUp, Users, Sparkles } from "lucide-react";
+import { ChevronRight, ChevronDown, TrendingUp, Users, Sparkles, Loader2, Database } from "lucide-react";
+import { fetchLichessStats, LichessExplorerResponse } from "@/lib/lichessApi";
+import { Chess } from "chess.js";
 
 interface MoveNode {
     san: string;
     uci?: string;
     count?: number;
-    winRate?: number;
+    winRate?: number; // White win rate
     drawRate?: number;
-    children?: MoveNode[];
+    blackWinRate?: number;
+    averageRating?: number;
 }
 
 interface OpeningTreeProps {
-    moves: string[];
+    moves: string[]; // Current moves in the game
     onMoveSelect?: (moves: string[], index: number) => void;
     currentMoveIndex?: number;
 }
 
-// Sample opening tree data - in production this would come from Lichess API
-const OPENING_TREE: Record<string, MoveNode[]> = {
-    "": [ // Initial position
-        {
-            san: "e4", count: 45, winRate: 54, children: [
-                {
-                    san: "e5", count: 30, winRate: 46, children: [
-                        { san: "Nf3", count: 28, winRate: 55 },
-                        { san: "Nc3", count: 5, winRate: 52 },
-                        { san: "f4", count: 3, winRate: 48 },
-                    ]
-                },
-                {
-                    san: "c5", count: 35, winRate: 45, children: [
-                        { san: "Nf3", count: 30, winRate: 54 },
-                        { san: "Nc3", count: 8, winRate: 52 },
-                        { san: "c3", count: 5, winRate: 55 },
-                    ]
-                },
-                { san: "e6", count: 15, winRate: 48 },
-                { san: "c6", count: 12, winRate: 47 },
-            ]
-        },
-        {
-            san: "d4", count: 40, winRate: 53, children: [
-                {
-                    san: "d5", count: 25, winRate: 47, children: [
-                        { san: "c4", count: 20, winRate: 54 },
-                        { san: "Nf3", count: 10, winRate: 52 },
-                    ]
-                },
-                {
-                    san: "Nf6", count: 30, winRate: 46, children: [
-                        { san: "c4", count: 28, winRate: 53 },
-                        { san: "Nf3", count: 5, winRate: 51 },
-                    ]
-                },
-            ]
-        },
-        { san: "c4", count: 15, winRate: 52 },
-        { san: "Nf3", count: 12, winRate: 51 },
-    ],
-};
-
-function MoveNode({
+function MoveRow({
     node,
-    depth,
-    path,
-    isSelected,
     onSelect
 }: {
     node: MoveNode;
-    depth: number;
-    path: string[];
-    isSelected: boolean;
-    onSelect: (path: string[]) => void;
+    onSelect: (san: string) => void;
 }) {
-    const [isExpanded, setIsExpanded] = useState(depth < 2);
-    const hasChildren = node.children && node.children.length > 0;
-
-    const getWinRateColor = (rate?: number) => {
-        if (!rate) return "text-muted-foreground";
-        if (rate >= 55) return "text-emerald-400";
-        if (rate >= 50) return "text-blue-400";
-        if (rate >= 45) return "text-yellow-400";
-        return "text-red-400";
-    };
-
-    const getPopularityBar = (count?: number) => {
-        if (!count) return 0;
-        return Math.min((count / 50) * 100, 100);
-    };
+    const total = node.count || 0;
+    // Calculate percentages relative to this node's total
+    const whitePct = node.winRate || 0;
+    const drawPct = node.drawRate || 0;
+    const blackPct = node.blackWinRate || 0;
 
     return (
-        <div className="select-none">
-            <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors ${isSelected
-                        ? "bg-primary/20 border border-primary/30"
-                        : "hover:bg-secondary/50"
-                    }`}
-                onClick={() => {
-                    onSelect([...path, node.san]);
-                    if (hasChildren) setIsExpanded(!isExpanded);
-                }}
-            >
-                {/* Expand/Collapse Icon */}
-                <div className="w-4 h-4 flex items-center justify-center">
-                    {hasChildren ? (
-                        isExpanded ? (
-                            <ChevronDown className="w-3 h-3 text-muted-foreground" />
-                        ) : (
-                            <ChevronRight className="w-3 h-3 text-muted-foreground" />
-                        )
-                    ) : (
-                        <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-                    )}
+        <motion.div
+            initial={{ opacity: 0, x: -5 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="group flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-secondary/50 transition-colors"
+            onClick={() => onSelect(node.san)}
+        >
+            <div className="w-16 font-mono font-medium text-primary group-hover:underline decoration-primary/50 underline-offset-4">
+                {node.san}
+            </div>
+
+            <div className="flex-1 flex flex-col gap-1">
+                {/* Progress Bar */}
+                <div className="h-2 w-full flex rounded-full overflow-hidden bg-secondary/50">
+                    <div className="bg-emerald-400/80" style={{ width: `${whitePct}%` }} title={`White: ${whitePct}%`} />
+                    <div className="bg-gray-400/50" style={{ width: `${drawPct}%` }} title={`Draw: ${drawPct}%`} />
+                    <div className="bg-red-400/80" style={{ width: `${blackPct}%` }} title={`Black: ${blackPct}%`} />
                 </div>
+            </div>
 
-                {/* Move SAN */}
-                <span className={`font-mono font-medium ${isSelected ? "text-primary" : ""}`}>
-                    {node.san}
-                </span>
+            <div className="w-24 text-right text-xs text-muted-foreground flex flex-col">
+                <span className="font-medium text-foreground">{(total / 1000).toFixed(1)}k</span>
+                <span>games</span>
+            </div>
 
-                {/* Stats */}
-                <div className="flex items-center gap-3 ml-auto text-xs">
-                    {/* Popularity */}
-                    {node.count && (
-                        <div className="flex items-center gap-1" title={`${node.count}% popularity`}>
-                            <Users className="w-3 h-3 text-muted-foreground" />
-                            <div className="w-12 h-1.5 bg-secondary rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-blue-500/60 rounded-full"
-                                    style={{ width: `${getPopularityBar(node.count)}%` }}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Win Rate */}
-                    {node.winRate && (
-                        <div className={`flex items-center gap-1 ${getWinRateColor(node.winRate)}`} title={`${node.winRate}% white wins`}>
-                            <TrendingUp className="w-3 h-3" />
-                            <span>{node.winRate}%</span>
-                        </div>
-                    )}
-                </div>
-            </motion.div>
-
-            {/* Children */}
-            <AnimatePresence>
-                {isExpanded && hasChildren && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="ml-4 border-l border-border/50 pl-2 mt-1 space-y-0.5"
-                    >
-                        {node.children!.map((child, idx) => (
-                            <MoveNode
-                                key={`${child.san}-${idx}`}
-                                node={child}
-                                depth={depth + 1}
-                                path={[...path, node.san]}
-                                isSelected={false}
-                                onSelect={onSelect}
-                            />
-                        ))}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
+            <div className="w-12 text-right text-xs font-medium">
+                <span className="text-emerald-500">{whitePct}%</span>
+            </div>
+        </motion.div>
     );
 }
 
-export function OpeningTree({ moves, onMoveSelect, currentMoveIndex = 0 }: OpeningTreeProps) {
-    const [selectedPath, setSelectedPath] = useState<string[]>([]);
+export function OpeningTree({ moves, onMoveSelect }: OpeningTreeProps) {
+    const [stats, setStats] = useState<LichessExplorerResponse | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [fen, setFen] = useState("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
-    const handleMoveSelect = useCallback((path: string[]) => {
-        setSelectedPath(path);
-        if (onMoveSelect) {
-            onMoveSelect(path, path.length);
+    // Compute FEN from moves
+    useEffect(() => {
+        const chess = new Chess();
+        for (const move of moves) {
+            try {
+                chess.move(move);
+            } catch {
+                break;
+            }
         }
-    }, [onMoveSelect]);
+        setFen(chess.fen());
+    }, [moves]);
 
-    const rootNodes = OPENING_TREE[""] || [];
+    // Fetch stats when FEN changes
+    useEffect(() => {
+        let isMounted = true;
+
+        async function loadStats() {
+            setIsLoading(true);
+            const data = await fetchLichessStats(fen);
+            if (isMounted) {
+                setStats(data);
+                setIsLoading(false);
+            }
+        }
+
+        loadStats();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [fen]);
+
+    const handleMoveSelect = useCallback((san: string) => {
+        if (onMoveSelect) {
+            onMoveSelect([...moves, san], moves.length + 1);
+        }
+    }, [moves, onMoveSelect]);
+
+    const moveNodes: MoveNode[] = stats?.moves.map(m => {
+        const total = m.white + m.draw + m.black;
+        return {
+            san: m.san,
+            uci: m.uci,
+            count: total,
+            winRate: Math.round((m.white / total) * 100),
+            drawRate: Math.round((m.draw / total) * 100),
+            blackWinRate: Math.round((m.black / total) * 100),
+            averageRating: m.averageRating
+        };
+    }) || [];
 
     return (
-        <div className="bg-card rounded-xl border border-border p-4">
+        <div className="bg-card rounded-xl border border-border flex flex-col h-[500px]">
             {/* Header */}
-            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
-                <Sparkles className="w-4 h-4 text-primary" />
-                <h3 className="font-semibold">Opening Explorer</h3>
+            <div className="flex items-center gap-2 p-4 border-b border-border bg-card/50 backdrop-blur-sm z-10 rounded-t-xl">
+                <Database className="w-4 h-4 text-primary" />
+                <h3 className="font-semibold">Lichess Database</h3>
                 <span className="text-xs text-muted-foreground ml-auto">
-                    Click moves to explore
+                    {stats ? `${(stats.white + stats.draw + stats.black).toLocaleString()} games` : "Loading..."}
                 </span>
             </div>
 
-            {/* Current Line Display */}
-            {selectedPath.length > 0 && (
-                <div className="mb-4 p-2 bg-secondary/30 rounded-lg">
-                    <div className="text-xs text-muted-foreground mb-1">Current line:</div>
-                    <div className="font-mono text-sm">
-                        {selectedPath.map((move, idx) => (
-                            <span key={idx}>
-                                {idx % 2 === 0 && <span className="text-muted-foreground">{Math.floor(idx / 2) + 1}. </span>}
-                                <span className="text-primary">{move}</span>
-                                {idx < selectedPath.length - 1 && " "}
-                            </span>
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-secondary">
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                        <span className="text-sm">Loading stats...</span>
+                    </div>
+                ) : moveNodes.length > 0 ? (
+                    <div className="space-y-0.5">
+                        {moveNodes.map((node) => (
+                            <MoveRow
+                                key={node.san}
+                                node={node}
+                                onSelect={handleMoveSelect}
+                            />
                         ))}
                     </div>
-                </div>
-            )}
-
-            {/* Tree */}
-            <div className="space-y-0.5 max-h-[400px] overflow-y-auto pr-2">
-                {rootNodes.map((node, idx) => (
-                    <MoveNode
-                        key={`${node.san}-${idx}`}
-                        node={node}
-                        depth={0}
-                        path={[]}
-                        isSelected={selectedPath[0] === node.san}
-                        onSelect={handleMoveSelect}
-                    />
-                ))}
+                ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+                        <Database className="w-8 h-8 opacity-20" />
+                        <span className="text-sm">No games found in this position</span>
+                    </div>
+                )}
             </div>
 
             {/* Legend */}
-            <div className="mt-4 pt-3 border-t border-border flex items-center gap-4 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                    <Users className="w-3 h-3" />
-                    <span>Popularity</span>
+            <div className="p-3 border-t border-border bg-secondary/20 text-xs text-muted-foreground flex justify-between px-6 rounded-b-xl">
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span>White Wins</span>
                 </div>
-                <div className="flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3" />
-                    <span>White Win %</span>
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-gray-400" />
+                    <span>Draw</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-red-400" />
+                    <span>Black Wins</span>
                 </div>
             </div>
         </div>

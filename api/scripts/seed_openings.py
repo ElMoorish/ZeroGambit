@@ -171,12 +171,39 @@ async def seed_openings():
     openings_collection = db.openings
     
     print(f"✓ Connected to MongoDB: {mongodb_uri}")
-    print(f"\n🔄 Seeding {len(OPENINGS)} openings...")
+
+    # Load expanded openings from JSON
+    json_path = os.path.join(os.path.dirname(__file__), "..", "data", "openings_expanded.json")
+    json_openings = []
+    try:
+        with open(json_path, "r") as f:
+            json_openings = json.load(f)
+        print(f"✓ Loaded {len(json_openings)} openings from JSON")
+    except Exception as e:
+        print(f"⚠️ Could not load JSON openings: {e}")
+
+    # Combine lists (JSON takes precedence if duplicates)
+    combined_openings = OPENINGS.copy()
+    existing_keys = set((o["eco"], o["name"]) for o in OPENINGS)
+    
+    for op in json_openings:
+        key = (op["eco"], op["name"])
+        if key not in existing_keys:
+            combined_openings.append(op)
+            existing_keys.add(key)
+        else:
+            # Update existing opening with JSON data (contains teaching content)
+            for idx, existing in enumerate(combined_openings):
+                if (existing["eco"], existing["name"]) == key:
+                    combined_openings[idx].update(op)
+                    break
+
+    print(f"\n🔄 Seeding {len(combined_openings)} openings...")
     
     inserted = 0
     updated = 0
     
-    for opening in OPENINGS:
+    for opening in combined_openings:
         # Generate FEN for the position after main line moves
         fen = generate_fen(opening["moves"])
         

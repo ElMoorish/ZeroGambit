@@ -64,6 +64,63 @@ export default function OpeningsPage() {
     const [currentFen, setCurrentFen] = useState("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     const [moveIndex, setMoveIndex] = useState(0);
 
+    // Progress state
+    const [userId, setUserId] = useState<string>("");
+    const [learnedEcob, setLearnedEcob] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        // Initialize user ID
+        let uid = localStorage.getItem("grandmaster_user_id");
+        if (!uid) {
+            uid = "user_" + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem("grandmaster_user_id", uid);
+        }
+        setUserId(uid);
+
+        // Fetch progress
+        fetch(`/api/py/api/progress/openings/${uid}`)
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    const learned = new Set(data.filter((i: any) => i.learned).map((i: any) => i.eco));
+                    setLearnedEcob(learned);
+                }
+            })
+            .catch(console.error);
+    }, []);
+
+    const toggleLearned = async (e: React.MouseEvent, opening: Opening) => {
+        e.stopPropagation();
+        const newStatus = !learnedEcob.has(opening.eco);
+
+        // Optimistic update
+        const newSet = new Set(learnedEcob);
+        if (newStatus) newSet.add(opening.eco);
+        else newSet.delete(opening.eco);
+        setLearnedEcob(newSet);
+
+        try {
+            await fetch("/api/py/api/progress/openings/learn", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id: userId,
+                    eco: opening.eco,
+                    learned: newStatus
+                })
+            });
+        } catch (error) {
+            console.error("Failed to update progress:", error);
+            // Revert on error
+            setLearnedEcob(prev => {
+                const reverted = new Set(prev);
+                if (newStatus) reverted.delete(opening.eco);
+                else reverted.add(opening.eco);
+                return reverted;
+            });
+        }
+    };
+
     // Load opening into explorer - defined early so useEffects can use it
     const loadOpening = useCallback((opening: Opening) => {
         setSelectedOpening(opening);
@@ -426,7 +483,12 @@ export default function OpeningsPage() {
                                                 <span className="text-xs font-mono bg-secondary px-2 py-0.5 rounded">
                                                     {opening.eco}
                                                 </span>
-                                                <span className="text-sm truncate">{opening.name}</span>
+                                                <div className="flex-1 min-w-0 flex items-center justify-between">
+                                                    <span className="text-sm truncate pr-2">{opening.name}</span>
+                                                    {learnedEcob.has(opening.eco) && (
+                                                        <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                                    )}
+                                                </div>
                                             </button>
                                         ))}
                                     </div>
@@ -440,11 +502,24 @@ export default function OpeningsPage() {
                                 {selectedOpening ? (
                                     <>
                                         <div className="mb-4">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded">
-                                                    {selectedOpening.eco}
-                                                </span>
-                                                <h2 className="text-xl font-bold">{selectedOpening.name}</h2>
+                                            <div className="flex items-center justify-between gap-4 mb-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded">
+                                                        {selectedOpening.eco}
+                                                    </span>
+                                                    <h2 className="text-xl font-bold">{selectedOpening.name}</h2>
+                                                </div>
+
+                                                <button
+                                                    onClick={(e) => toggleLearned(e, selectedOpening)}
+                                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${learnedEcob.has(selectedOpening.eco)
+                                                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                                            : "bg-secondary hover:bg-secondary/80 border border-border"
+                                                        }`}
+                                                >
+                                                    <Check className="w-4 h-4" />
+                                                    {learnedEcob.has(selectedOpening.eco) ? "Learned" : "Mark Learned"}
+                                                </button>
                                             </div>
                                             <p className="text-sm text-muted-foreground">
                                                 {selectedOpening.description}

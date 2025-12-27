@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-from api.routers import games, captcha, analysis, puzzles, coach, content, openings, user, curriculum
+from api.routers import games, captcha, analysis, puzzles, coach, content, openings, user, curriculum, progress
 from api.database import connect_db, close_db
 
 
@@ -74,6 +74,7 @@ app.include_router(content.router, tags=["Content"])  # Video Content Pipeline
 app.include_router(openings.router, tags=["Openings"])  # Opening Repertoire
 app.include_router(user.router, prefix="/api", tags=["Users"]) # New User Sync
 app.include_router(curriculum.router, prefix="/api", tags=["Curriculum"]) # New Progress
+app.include_router(progress.router, tags=["Progress"]) # Generic Progress (Openings etc)
 
 # Mount static files for generated videos
 from fastapi.staticfiles import StaticFiles
