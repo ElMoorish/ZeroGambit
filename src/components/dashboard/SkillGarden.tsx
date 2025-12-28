@@ -47,34 +47,43 @@ function GrowthRings({ stats }: { stats: UserStats }) {
         if (!containerRef.current || !mounted) return;
 
         // Animate rings expanding
-        gsap.fromTo(
-            ".growth-ring",
-            { scale: 0, opacity: 0 },
-            {
-                scale: 1,
-                opacity: 1,
-                duration: 1.2,
-                stagger: 0.15,
-                ease: "elastic.out(1, 0.5)"
-            }
-        );
+        const rings = containerRef.current.querySelectorAll(".growth-ring");
+        if (rings.length > 0) {
+            gsap.fromTo(
+                rings,
+                { scale: 0, opacity: 0 },
+                {
+                    scale: 1,
+                    opacity: 1,
+                    duration: 1.2,
+                    stagger: 0.15,
+                    ease: "elastic.out(1, 0.5)"
+                }
+            );
+        }
 
-        // Animate progress bars
-        gsap.fromTo(
-            ".progress-fill",
-            { scaleX: 0 },
-            { scaleX: 1, duration: 1, delay: 0.5, ease: "power2.out", stagger: 0.1 }
-        );
+        // Animate progress bars (only if they exist in this scope)
+        const progressBars = containerRef.current.querySelectorAll(".progress-fill");
+        if (progressBars.length > 0) {
+            gsap.fromTo(
+                progressBars,
+                { scaleX: 0 },
+                { scaleX: 1, duration: 1, delay: 0.5, ease: "power2.out", stagger: 0.1 }
+            );
+        }
 
         // Pulse effect on center
-        gsap.to(".center-glow", {
-            scale: 1.1,
-            opacity: 0.8,
-            duration: 2,
-            repeat: -1,
-            yoyo: true,
-            ease: "sine.inOut"
-        });
+        const glow = containerRef.current.querySelector(".center-glow");
+        if (glow) {
+            gsap.to(glow, {
+                scale: 1.1,
+                opacity: 0.8,
+                duration: 2,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+        }
 
     }, { scope: containerRef, dependencies: [mounted] });
 

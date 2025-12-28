@@ -32,9 +32,10 @@ class OpeningListResponse(BaseModel):
 async def list_openings(
     eco: Optional[str] = Query(None, description="Filter by ECO code prefix (e.g., 'B' for Sicilians)"),
     search: Optional[str] = Query(None, description="Search by opening name"),
-    limit: int = Query(50, ge=1, le=200)
+    limit: int = Query(50, ge=1, le=200),
+    skip: int = Query(0, ge=0, description="Number of openings to skip (for pagination)")
 ):
-    """List all openings with optional filtering"""
+    """List all openings with optional filtering and pagination"""
     db = get_db()
     if db is None:
         return OpeningListResponse(openings=[], total=0)
@@ -45,9 +46,9 @@ async def list_openings(
     if search:
         query["name"] = {"$regex": search, "$options": "i"}
     
-    cursor = db.openings.find(query).limit(limit)
+    cursor = db.openings.find(query).skip(skip).limit(limit)
     openings = []
-    print(f"DEBUG: list_openings eco={eco} search={search} limit={limit}")
+    print(f"DEBUG: list_openings eco={eco} search={search} limit={limit} skip={skip}")
     async for doc in cursor:
         try:
             if "_id" in doc:

@@ -52,6 +52,12 @@ export default function OpeningsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
 
+    // Pagination state
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
+    const [totalCount, setTotalCount] = useState(0);
+    const PAGE_SIZE = 50;
+
     // Quiz state
     const [quizOpening, setQuizOpening] = useState<Opening | null>(null);
     const [quizMoveIndex, setQuizMoveIndex] = useState(0);
@@ -163,34 +169,54 @@ export default function OpeningsPage() {
         fetchCategories();
     }, []);
 
-    // Fetch openings when category changes
+    // Fetch openings when category changes (reset pagination)
     useEffect(() => {
         if (!selectedCategory) return;
+        // Reset pagination when category changes
+        setOffset(0);
+        setOpenings([]);
+        fetchOpeningsPage(0, true);
+    }, [selectedCategory]);
 
-        const fetchOpenings = async () => {
-            setIsLoading(true);
-            try {
-                const response = await fetch(`/api/py/api/openings/?eco=${selectedCategory}&limit=100`);
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log("✅ Fetched openings:", data.openings?.length);
-                    const openingsList = data.openings || [];
+    // Fetch function for pagination
+    const fetchOpeningsPage = async (page: number, isNewCategory: boolean = false) => {
+        setIsLoading(true);
+        try {
+            const skip = page * PAGE_SIZE;
+            const response = await fetch(`/api/py/api/openings/?eco=${selectedCategory}&limit=${PAGE_SIZE}&skip=${skip}`);
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`✅ Fetched openings page ${page}:`, data.openings?.length, "Total:", data.total);
+                const openingsList = data.openings || [];
+
+                if (isNewCategory) {
                     setOpenings(openingsList);
                     // Auto-load first opening so board isn't empty
                     if (openingsList.length > 0 && !selectedOpening) {
                         loadOpening(openingsList[0]);
                     }
                 } else {
-                    console.error("❌ API Error:", response.status, await response.text());
+                    setOpenings(prev => [...prev, ...openingsList]);
                 }
-            } catch (error) {
-                console.error("Failed to fetch openings:", error);
-            } finally {
-                setIsLoading(false);
+
+                setTotalCount(data.total || 0);
+                setHasMore(openingsList.length === PAGE_SIZE && (skip + openingsList.length) < (data.total || 0));
+                setOffset(page);
+            } else {
+                console.error("❌ API Error:", response.status, await response.text());
             }
-        };
-        fetchOpenings();
-    }, [selectedCategory, loadOpening]);
+        } catch (error) {
+            console.error("Failed to fetch openings:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const loadMoreOpenings = () => {
+        if (!isLoading && hasMore) {
+            fetchOpeningsPage(offset + 1);
+        }
+    };
 
     // Search openings
     useEffect(() => {
@@ -513,6 +539,21 @@ export default function OpeningsPage() {
                                             </div>
                                         </button>
                                     ))
+                                )}
+
+                                {/* Load More Button */}
+                                {hasMore && !isLoading && (
+                                    <button
+                                        onClick={loadMoreOpenings}
+                                        className="w-full py-3 mt-2 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors border border-dashed border-primary/30"
+                                    >
+                                        Load More ({openings.length} of {totalCount})
+                                    </button>
+                                )}
+                                {isLoading && openings.length > 0 && (
+                                    <div className="flex justify-center py-3">
+                                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                                    </div>
                                 )}
                             </div>
                         </div>
