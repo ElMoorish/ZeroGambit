@@ -7,16 +7,18 @@ const nextConfig: NextConfig = {
   // Next.js 16 requires this when both are present
   turbopack: {},
 
-  // Exclude video and api folders from Next.js compilation
+  // Exclude video and Python API folders from Next.js compilation
   // These are separate projects (Remotion, FastAPI)
+  // Note: Must be careful not to exclude src/app/api which contains Next.js API routes!
   webpack: (config) => {
-    // Ignore video folder during webpack compilation
+    // Ignore video folder and root-level api folder during webpack compilation
     config.watchOptions = {
       ...config.watchOptions,
       ignored: [
         '**/node_modules/**',
         '**/video/**',
-        '**/api/**',
+        // Only ignore the root-level api folder (FastAPI backend), not src/app/api
+        /^api\//,  // Matches only "api/" at the start, not "src/app/api/"
       ]
     };
 
