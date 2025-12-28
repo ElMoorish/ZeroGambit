@@ -279,9 +279,15 @@ export default function OpeningsPage() {
         setCurrentFen(newChess.fen());
     }, [openings]);
 
-    // Handle quiz move
+    // Handle quiz move - User plays White, Black auto-plays
     const handleQuizMove = useCallback((from: string, to: string) => {
         if (!chess || !quizOpening || quizStatus !== "playing") return false;
+
+        // Determine whose turn it is
+        const isWhiteTurn = chess.turn() === 'w';
+
+        // User always plays White - reject if it's Black's turn (shouldn't happen)
+        if (!isWhiteTurn) return false;
 
         const expectedMove = quizOpening.moves[quizMoveIndex];
 
@@ -302,7 +308,38 @@ export default function OpeningsPage() {
                     setQuizScore(s => s + 1);
                     setQuizStreak(s => s + 1);
                 } else {
-                    setQuizMoveIndex(quizMoveIndex + 1);
+                    // Check if next move is Black's move (opponent response)
+                    const nextMoveIndex = quizMoveIndex + 1;
+                    const nextMove = quizOpening.moves[nextMoveIndex];
+
+                    // After user's white move, auto-play black's response
+                    if (chess.turn() === 'b' && nextMove) {
+                        // Small delay to show the move happening
+                        setTimeout(() => {
+                            try {
+                                const opponentMove = chess.move(nextMove);
+                                if (opponentMove) {
+                                    setCurrentFen(chess.fen());
+
+                                    // Check if quiz is complete after opponent's move
+                                    if (nextMoveIndex + 1 >= quizOpening.moves.length) {
+                                        setQuizStatus("correct");
+                                        setQuizScore(s => s + 1);
+                                        setQuizStreak(s => s + 1);
+                                    } else {
+                                        // Move to user's next turn
+                                        setQuizMoveIndex(nextMoveIndex + 1);
+                                    }
+                                }
+                            } catch (e) {
+                                console.error("Failed to play opponent move:", e);
+                            }
+                        }, 400); // 400ms delay for visual feedback
+
+                        setQuizMoveIndex(nextMoveIndex);
+                    } else {
+                        setQuizMoveIndex(nextMoveIndex);
+                    }
                     setShowHint(false);
                 }
                 return true;
@@ -312,7 +349,7 @@ export default function OpeningsPage() {
                 setQuizStatus("wrong");
                 setQuizStreak(0);
 
-                // Show correct move briefly, then reset
+                // Show correct move briefly, then reset 
                 setTimeout(() => {
                     setQuizStatus("playing");
                 }, 1000);

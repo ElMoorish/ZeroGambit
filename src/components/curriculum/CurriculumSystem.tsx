@@ -138,7 +138,7 @@ export function CurriculumOverview() {
                 {CURRICULUM_PHASES.map((phase, index) => {
                     const Icon = phase.icon;
                     const phaseProgress = getPhaseProgress(phase);
-                    const isLocked = index > 0 && getPhaseProgress(CURRICULUM_PHASES[index - 1]) < 80;
+                    const isLocked = false; // All phases unlocked - no progression gating
 
                     return (
                         <motion.button
