@@ -39,6 +39,8 @@ async function proxyRequest(
     // Get backend URL and force HTTPS for trycloudflare
     let backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
 
+    console.log(`[API Proxy] Original BACKEND_URL: ${process.env.BACKEND_URL || 'NOT SET'}`);
+
     if (backendUrl.includes('trycloudflare.com')) {
         backendUrl = backendUrl.replace(/^http:\/\//i, 'https://');
     }
@@ -48,7 +50,7 @@ async function proxyRequest(
     const searchParams = request.nextUrl.searchParams.toString();
     const targetUrl = `${backendUrl}/${pathString}${searchParams ? '?' + searchParams : ''}`;
 
-    console.log(`[API Proxy] ${request.method} ${targetUrl}`);
+    console.log(`[API Proxy] ${request.method} -> ${targetUrl}`);
 
     try {
         // Get request body for non-GET requests
