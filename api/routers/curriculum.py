@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from api.models.curriculum import UserCurriculumProgress, ModuleProgress
-from api.database import db
+from api.database import get_db
 from datetime import datetime
 from typing import List, Optional
 
@@ -8,6 +8,7 @@ router = APIRouter()
 
 @router.get("/curriculum/progress/{user_id}", response_model=UserCurriculumProgress)
 async def get_progress(user_id: str):
+    db = get_db()
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
         
@@ -22,6 +23,7 @@ async def get_progress(user_id: str):
 
 @router.post("/curriculum/progress/{user_id}/{module_id}")
 async def update_module_progress(user_id: str, module_id: str, xp: int, level: int, streak: int):
+    db = get_db()
     if db is None:
         raise HTTPException(status_code=503, detail="Database not available")
         
@@ -48,11 +50,11 @@ async def update_module_progress(user_id: str, module_id: str, xp: int, level: i
                 "user_id": user_id  # Ensure user_id is set on upsert
             },
             "$inc": {
-                "total_xp": xp, # This might be wrong, logic should be careful about incremental vs absolute
+                "total_xp": xp,
             }
         },
         upsert=True
     )
     
-    # Re-fetch generic totals logic if needed, but for now specific module update is enough
     return {"status": "updated", "module_id": module_id}
+
