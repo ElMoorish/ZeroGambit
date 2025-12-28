@@ -26,6 +26,7 @@ import { Chess, Square } from "chess.js";
 import { ChessBoard } from "@/components/ChessBoard";
 import { useSounds } from "@/hooks/useSounds";
 import { BoardThemeSelector } from "@/components/BoardThemeSelector";
+import { curriculumApi } from "@/lib/curriculumApi";
 
 interface PuzzleData {
     id: string;
@@ -230,12 +231,21 @@ function PuzzlesPageContent() {
             setModuleProgress(prev => {
                 const newProgress = Math.min(prev + increment, 100);
 
-                // Save to DB
+                // Save to local DB
                 getSetting("curriculum_progress").then(json => {
                     const progressMap = json ? JSON.parse(json) : {};
                     progressMap[curriculumMode.module] = newProgress;
                     setSetting("curriculum_progress", JSON.stringify(progressMap));
                 });
+
+                // Sync to backend (calculate level from progress)
+                const calculatedLevel = Math.floor(newProgress / 20) + 1; // 5 levels, 20% each
+                const userId = localStorage.getItem("grandmaster_user_id") || "anonymous";
+                curriculumApi.updateModuleProgress(userId, curriculumMode.module, {
+                    xp: xp,
+                    level: calculatedLevel,
+                    streak: streak
+                }).catch(console.error);
 
                 // Check completion
                 if (newProgress >= 100 && prev < 100) {
