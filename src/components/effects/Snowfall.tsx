@@ -66,7 +66,8 @@ export function Snowfall() {
             const viewportHeight = window.innerHeight;
 
             const blizzardStart = viewportHeight * 0.8;
-            const blizzardEnd = viewportHeight * 5;
+            // Extended to cover until "Be the first" CTA section
+            const blizzardEnd = viewportHeight * 12;
 
             setIsBlizzard(scrollY >= blizzardStart && scrollY <= blizzardEnd);
         };
