@@ -33,10 +33,19 @@ const nextConfig: NextConfig = {
   async rewrites() {
     let backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
 
-    // Auto-upgrade trycloudflare URLs to HTTPS to prevent Mixed Content errors
-    if (backendUrl.includes('trycloudflare.com') && backendUrl.startsWith('http://')) {
-      backendUrl = backendUrl.replace('http://', 'https://');
+    // Log for debugging
+    console.log('[next.config] Original BACKEND_URL:', backendUrl);
+
+    // FORCE HTTPS for trycloudflare URLs - replace any http with https
+    if (backendUrl.includes('trycloudflare.com')) {
+      backendUrl = backendUrl.replace(/^http:\/\//i, 'https://');
+      // Ensure it starts with https
+      if (!backendUrl.startsWith('https://')) {
+        backendUrl = 'https://' + backendUrl.replace(/^https?:\/\//i, '');
+      }
     }
+
+    console.log('[next.config] Final BACKEND_URL:', backendUrl);
 
     return [
       {
