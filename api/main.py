@@ -57,12 +57,17 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:3001",  # Docker frontend
         "https://grandmaster-guard.vercel.app",
+        "https://zerogambit.vercel.app",  # Main production URL
         os.getenv("NEXT_PUBLIC_APP_URL", "http://localhost:3000"),
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Trust proxy headers (X-Forwarded-Proto, X-Forwarded-For) for HTTPS behind Cloudflare/Vercel
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
 # Include routers
 app.include_router(games.router, prefix="/api", tags=["Games"])
