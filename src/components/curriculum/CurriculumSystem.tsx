@@ -410,12 +410,15 @@ export function SkillTreeVisualization() {
                             <motion.div
                                 className="absolute left-1/2 -translate-x-1/2"
                                 initial={{ scale: 0 }}
-                                whileInView={{ scale: 1 }}
-                                viewport={{ once: true }}
+                                animate={{ scale: 1 }}
                                 transition={{ delay: index * 0.2 + 0.2, type: "spring", stiffness: 200 }}
                             >
                                 <div className={`relative w-12 h-12 rounded-full ${phase.color.replace("text-", "bg-")} shadow-lg`}>
-                                    <div className={`absolute inset-0 rounded-full ${phase.color.replace("text-", "bg-")} animate-ping opacity-30`} />
+                                    <motion.div
+                                        className={`absolute inset-0 rounded-full ${phase.color.replace("text-", "bg-")} opacity-30`}
+                                        animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.1, 0.3] }}
+                                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                    />
                                     <div className="absolute inset-0 flex items-center justify-center">
                                         <Icon className="w-5 h-5 text-white" />
                                     </div>
